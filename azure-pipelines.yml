@@ -19,7 +19,7 @@ pool:
 variables:
   RESOURCE_GROUP: testyml_group
   WEBAPP_NAME: testyml
-  APP_SERVICE_PLAN:  ASP-testdockergroup-965b
+  APP_SERVICE_PLAN: ASP-testdockergroup-965b
 
 stages:
   - stage: Deploy
@@ -45,4 +45,3 @@ stages:
                 # Restart the web app to apply changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
             displayName: 'Deploy to Azure Web App'
-            
