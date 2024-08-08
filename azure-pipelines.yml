@@ -30,7 +30,7 @@ stages:
 
           - task: AzureCLI@2
             inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)-1530'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
