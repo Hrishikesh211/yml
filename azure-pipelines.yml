@@ -30,7 +30,7 @@ stages:
 
           - task: AzureCLI@2
             inputs:
-              azureSubscription: '<azure-service-connection>'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
@@ -38,10 +38,10 @@ stages:
                 
                 # Create the web app if it does not exist
                 az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) --multicontainer-config-file airflow_pipeline/docker-compose.yml || true
-
+                
                 # Configure the web app to use Docker Compose
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file airflow_pipeline/docker-compose.yml
-
+                
                 # Restart the web app to apply changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
             displayName: 'Deploy to Azure Web App'
