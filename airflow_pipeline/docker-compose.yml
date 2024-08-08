@@ -2,27 +2,26 @@
 services:
   airflow-webserver:
     image: apache/airflow:2.9.3
-    build:
-      context: .
-      dockerfile: Dockerfile
     environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$xN43O@airflow-app.postgres.database.azure.com:5432/postgres
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__WEBSERVER__BASE_URL=https://airflow-docker-compose-v1-fga9gahehfbpaca0.southindia-01.azurewebsites.net
-      - _AIRFLOW_DB_MIGRATE=true
-      - _AIRFLOW_WWW_USER_CREATE=true
-      - _AIRFLOW_WWW_USER_USERNAME=admins
-      - _AIRFLOW_WWW_USER_PASSWORD=admins
-      - AIRFLOW__LOGGING__LOGGING_LEVEL=DEBUG
-      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
-      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
+      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
+      - AIRFLOW__WEBSERVER__BASE_URL=${AIRFLOW__WEBSERVER__BASE_URL}
+      - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
+      - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
+      - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
+      - _AIRFLOW_WWW_USER_PASSWORD=${_AIRFLOW_WWW_USER_PASSWORD}
+      - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
+      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
+      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
     volumes:
       - /dags:/opt/airflow/dags
       - /dags/trigger_azure_function_async.py:/opt/airflow/dags/trigger_azure_function_async.py
       - /dags/requirements.txt:/requirements.txt
     ports:
-      - "8080:8181"
+      - "8080:8080"
     command: 
       - bash
       - -c
@@ -32,23 +31,22 @@ services:
         echo "Requirements installed."
         airflow db init
         echo "Database initialized."
-        airflow users create -r Admin -u admin -e admin@example.com -f Admin -l User -p admin --if-not-exists
+        airflow users create -r Admin -u ${_AIRFLOW_WWW_USER_USERNAME} -e admin@example.com -f Admin -l User -p ${_AIRFLOW_WWW_USER_PASSWORD} --if-not-exists
         echo "Admin user created."
         echo "Starting Airflow Webserver..."
         airflow webserver
-    # command: supervisord
-  
+
   airflow-scheduler:
     image: apache/airflow:2.9.3
     environment:
-      - VARIABLE=${xN43O}
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$xN43O@airflow-app.postgres.database.azure.com:5432/postgres
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__WEBSERVER__BASE_URL=https://airflow-docker-compose-v1-fga9gahehfbpaca0.southindia-01.azurewebsites.net
-      - AIRFLOW__LOGGING__LOGGING_LEVEL=DEBUG
-      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
-      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
+      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
+      - AIRFLOW__WEBSERVER__BASE_URL=${AIRFLOW__WEBSERVER__BASE_URL}
+      - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
+      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
     volumes:
       - /dags:/opt/airflow/dags
     command: 
@@ -59,8 +57,6 @@ services:
         sleep 60
         echo "Starting Airflow Scheduler..."
         airflow scheduler
-    # command: supervisord
-    
     restart: always
     depends_on:
       - airflow-webserver
