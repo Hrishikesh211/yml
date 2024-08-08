@@ -20,6 +20,7 @@ variables:
   RESOURCE_GROUP: testyml_group
   WEBAPP_NAME: testyml
   APP_SERVICE_PLAN: ASP-testdockergroup-965b
+  COMPOSE_FILE_PATH: 'airflow_pipeline/docker-compose.yml'
 
 stages:
   - stage: Deploy
@@ -30,18 +31,19 @@ stages:
 
           - task: AzureCLI@2
             inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)-1530'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Deploying to Azure Web App..."
+                echo "Deploying to Azure Web App using Docker Compose..."
                 
-                # Create the web app if it does not exist
-                az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) --multicontainer-config-file airflow_pipeline/docker-compose.yml || true
+                # Ensure the web app exists
+                az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH) || true
                 
-                # Configure the web app to use Docker Compose
-                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file airflow_pipeline/docker-compose.yml
+                # Configure the web app to use Docker Compose from Docker Hub (public repository)
+                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
                 
                 # Restart the web app to apply changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
-            displayName: 'Deploy to Azure Web App'
+            displayName: 'Deploy to Azure Web App using Docker Compose'
+
