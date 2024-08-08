@@ -1,4 +1,5 @@
 version: '3.7'
+
 services:
   airflow-webserver:
     image: apache/airflow:2.9.3
@@ -15,11 +16,10 @@ services:
       - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
       - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
-      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=${WEBAPP_STORAGE_HOME}/logs
+      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
     volumes:
       - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
-      - ${WEBAPP_STORAGE_HOME}/dags/trigger_azure_function_async.py:/opt/airflow/dags/trigger_azure_function_async.py
-      - ${WEBAPP_STORAGE_HOME}/requirements.txt:/requirements.txt
+      - ${WEBAPP_STORAGE_HOME}/dags/requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
     command: 
