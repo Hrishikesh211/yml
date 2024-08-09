@@ -34,24 +34,6 @@ stages:
                 
                 # Enable app service storage
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=true
-
-                # Set all required environment variables for Apache Airflow and Docker
-                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings \
-                  _AIRFLOW_DB_MIGRATE=true \
-                  _AIRFLOW_WWW_USER_CREATE=true \
-                  _AIRFLOW_WWW_USER_PASSWORD=admin \
-                  _AIRFLOW_WWW_USER_USERNAME=admin \
-                  AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60 \
-                  AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True \
-                  AIRFLOW__CORE__EXECUTOR=LocalExecutor \
-                  AIRFLOW__CORE__LOAD_EXAMPLES=False \
-                  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw\$xN43O@airflow-app.postgres.database.azure.com:5432/postgres" \
-                  AIRFLOW__LOGGING__LOGGING_LEVEL=INFO \
-                  AIRFLOW__WEBSERVER__BASE_URL=https://testyml-gmcvb9aehbbncwgs.southindia-01.azurewebsites.net \
-                  AIRFLOW__WEBSERVER__SECRET_KEY=HdRmUIde3UqviEYoXUm66rMO \
-                  DOCKER_ENABLE_CI=true \
-                  WEBSITES_ENABLE_APP_SERVICE_STORAGE=true\
-                  WEBSITE_HTTPLOGGING_RETENTION_DAYS = 0
                 
                 # Configure the web app to use Docker Compose from Docker Hub (public repository)
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
