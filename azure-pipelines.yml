@@ -35,17 +35,14 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Deploying Airflow using Docker Compose..."
+                echo "Deploying to Azure Web App using Docker Compose..."
 
                 # Ensure the web app exists
                 az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
                 
-                # Navigate to the directory containing the docker-compose.yml file
-                cd airflow_pipeline
+                # Configure the web app to use Docker Compose from Docker Hub (public repository)
+                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
                 
-                # Bring up the services defined in docker-compose.yml
-                docker compose up -d
-                
-                # Restart the web app to apply changes (if needed)
+                # Restart the web app to apply changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
-            displayName: 'Deploy Airflow to Azure Web App using Docker Compose'
+            displayName: 'Deploy to Azure Web App using Docker Compose'

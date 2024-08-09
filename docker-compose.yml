@@ -1,0 +1,66 @@
+services:
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
+      - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
+      - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
+      - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
+      - _AIRFLOW_WWW_USER_PASSWORD=${_AIRFLOW_WWW_USER_PASSWORD}
+      - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
+      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
+      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
+      - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./requirements.txt:/requirements.txt
+    ports:
+      - "8080:8080"
+    command:
+      - bash
+      - -c
+      - |
+        echo "Starting Airflow Webserver setup..."
+        pip install -r /requirements.txt
+        echo "Requirements installed."
+        airflow db init
+        echo "Database initialized."
+        airflow users create -r Admin -u admin -e admin@example.com -f Admin -l User -p admin --if-not-exists
+        echo "Admin user created."
+        echo "Starting Airflow Webserver..."
+        airflow webserver
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
+      - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
+      - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
+      - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
+      - _AIRFLOW_WWW_USER_PASSWORD=${_AIRFLOW_WWW_USER_PASSWORD}
+      - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
+      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
+      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
+      - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
+    volumes:
+      - ./dags:/opt/airflow/dags
+    ports:
+      - "8793:8793"
+    command:
+      - bash
+      - -c
+      - |
+        echo "Waiting for webserver to be ready..."
+        sleep 60
+        echo "Starting Airflow Scheduler..."
+        airflow scheduler
+    restart: always
+    depends_on:
+      - airflow-webserver
