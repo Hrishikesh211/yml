@@ -17,9 +17,9 @@ services:
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
       - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-    # volumes:
-    #   - /home/site/wwwroot/dags:/opt/airflow/dags
-    #   - /home/site/wwwroot/dags/requirements.txt:/requirements.txt
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
+      - ${WEBAPP_STORAGE_HOME}/dags/requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
     command: 
@@ -48,8 +48,8 @@ services:
       - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
       - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
-    # volumes:
-    #   - /home/site/wwwroot/dags:/opt/airflow/dags
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
     command: 
       - bash
       - -c
