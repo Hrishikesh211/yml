@@ -3,7 +3,7 @@ services:
     image: apache/airflow:2.9.3
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw\$xN43O@airflow-app.postgres.database.azure.com:5432/postgres"
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN='postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$xN43O@airflow-app.postgres.database.azure.com:5432/postgres'
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - _AIRFLOW_DB_MIGRATE=true
       - _AIRFLOW_WWW_USER_CREATE=true
