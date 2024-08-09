@@ -41,11 +41,11 @@ dag = DAG(
     "trigger_azure_functions",
     default_args=default_args,
     description="A DAG to trigger Azure Functions based on PostgreSQL data asynchronously",
-    schedule=timedelta(minutes=5),
-    max_active_runs=1,  # Ensure only one run is active at a time
-    max_active_tasks=5,  # Limit concurrent task instances
+    schedule_interval=timedelta(minutes=5),
 )
 
+dag.max_active_runs=1,  # Ensure only one run is active at a time
+dag.max_active_tasks=5,  # Limit concurrent task instances
 
 def get_file_properties_from_db():
     """
