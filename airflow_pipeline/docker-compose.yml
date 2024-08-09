@@ -52,7 +52,7 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags
     ports:
-      - "8793:8793"
+      - "8080:8080"
     command:
       - bash
       - -c
