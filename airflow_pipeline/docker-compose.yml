@@ -1,20 +1,23 @@
+version: '3.8'
+
 services:
   airflow-webserver:
     image: apache/airflow:2.9.3
     environment:
-      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
-      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
-      - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
-      - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
-      - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
-      - _AIRFLOW_WWW_USER_PASSWORD=${_AIRFLOW_WWW_USER_PASSWORD}
-      - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
-      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
-      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
-      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$xN43O@airflow-app.postgres.database.azure.com:5432/postgres
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _AIRFLOW_DB_MIGRATE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+      - AIRFLOW__LOGGING__LOGGING_LEVEL=DEBUG
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
+      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
+      - AIRFLOW__WEBSERVER__SECRET_KEY=HdRmUIde3UqviEYoXUm66rMO
+      - AIRFLOW__WEBSERVER__BASE_URL=https://airflow-docker-compose-v1-fga9gahehfbpaca0.southindia-01.azurewebsites.net
+      - AZURE_FUNCTIONS_URL=https://manoj-azure-functions-weaviate.azurewebsites.net/api/weaviate_storage_trigger?code=kROZ6bIGyTQCLHhk3acASnzp3z4tXFw5N17224kkMuFZAzFuXD1bLQ==
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-      - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./requirements.txt:/requirements.txt
@@ -33,22 +36,23 @@ services:
         echo "Admin user created."
         echo "Starting Airflow Webserver..."
         airflow webserver
+
   airflow-scheduler:
     image: apache/airflow:2.9.3
     environment:
-      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
-      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
-      - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
-      - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
-      - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
-      - _AIRFLOW_WWW_USER_PASSWORD=${_AIRFLOW_WWW_USER_PASSWORD}
-      - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
-      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
-      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
-      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$xN43O@airflow-app.postgres.database.azure.com:5432/postgres
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _AIRFLOW_DB_MIGRATE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+      - AIRFLOW__LOGGING__LOGGING_LEVEL=DEBUG
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
+      - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
+      - AIRFLOW__WEBSERVER__SECRET_KEY=HdRmUIde3UqviEYoXUm66rMO
+      - AZURE_FUNCTIONS_URL=https://manoj-azure-functions-weaviate.azurewebsites.net/api/weaviate_storage_trigger?code=kROZ6bIGyTQCLHhk3acASnzp3z4tXFw5N17224kkMuFZAzFuXD1bLQ==
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-      - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
     volumes:
       - ./dags:/opt/airflow/dags
     ports:
