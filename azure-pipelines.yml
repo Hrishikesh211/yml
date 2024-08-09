@@ -47,7 +47,7 @@ stages:
                 sleep 60
                 
                 # Verify that the DAGs folder exists and adjust DAG_PATH if needed
-                DAG_PATH="/home/site/wwwroot/dags/"
+                DAG_PATH="/home/dags/"
                 if ! curl -u $(WEBAPP_NAME):$(WEBSITE_PUBLISH_PASSWORD) --head "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/$DAG_PATH"; then
                   echo "DAGs folder not found, creating..."
                   curl -X PUT -u $(WEBAPP_NAME):$(WEBSITE_PUBLISH_PASSWORD) "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/$DAG_PATH"
