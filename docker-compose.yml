@@ -1,3 +1,5 @@
+version: '3.7'
+
 services:
   airflow-webserver:
     image: apache/airflow:2.9.3
@@ -5,6 +7,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
+      - AIRFLOW__WEBSERVER__BASE_URL=${AIRFLOW__WEBSERVER__BASE_URL}
       - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
       - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
       - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
@@ -14,13 +17,12 @@ services:
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
       - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-      - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
     volumes:
       - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
-      - ${WEBAPP_STORAGE_HOME}/requirements.txt:/requirements.txt
+      - ${WEBAPP_STORAGE_HOME}/dags/requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
-    command:
+    command: 
       - bash
       - -c
       - |
@@ -29,7 +31,7 @@ services:
         echo "Requirements installed."
         airflow db init
         echo "Database initialized."
-        airflow users create -r Admin -u admin -e admin@example.com -f Admin -l User -p admin --if-not-exists
+        airflow users create -r Admin -u ${_AIRFLOW_WWW_USER_USERNAME} -e admin@example.com -f Admin -l User -p ${_AIRFLOW_WWW_USER_PASSWORD} --if-not-exists
         echo "Admin user created."
         echo "Starting Airflow Webserver..."
         airflow webserver
@@ -40,21 +42,14 @@ services:
       - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
-      - _AIRFLOW_DB_MIGRATE=${_AIRFLOW_DB_MIGRATE}
-      - _AIRFLOW_WWW_USER_CREATE=${_AIRFLOW_WWW_USER_CREATE}
-      - _AIRFLOW_WWW_USER_USERNAME=${_AIRFLOW_WWW_USER_USERNAME}
-      - _AIRFLOW_WWW_USER_PASSWORD=${_AIRFLOW_WWW_USER_PASSWORD}
+      - AIRFLOW__WEBSERVER__BASE_URL=${AIRFLOW__WEBSERVER__BASE_URL}
       - AIRFLOW__LOGGING__LOGGING_LEVEL=${AIRFLOW__LOGGING__LOGGING_LEVEL}
       - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=${AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT}
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=${AIRFLOW__CORE__ENABLE_XCOM_PICKLING}
       - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
-      - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-      - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
     volumes:
       - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
-    ports:
-      - "8080:8080"
-    command:
+    command: 
       - bash
       - -c
       - |
