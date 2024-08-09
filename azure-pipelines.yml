@@ -11,7 +11,7 @@ trigger:
       - main
   paths:
     include:
-      - airflow_pipeline/**
+      - dags/**
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -20,7 +20,7 @@ variables:
   RESOURCE_GROUP: testyml_group
   WEBAPP_NAME: testyml
   APP_SERVICE_PLAN: ASP-testdockergroup-965b
-  COMPOSE_FILE_PATH: 'airflow_pipeline/docker-compose.yml'
+  COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
   - stage: Deploy
