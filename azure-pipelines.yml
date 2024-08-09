@@ -13,6 +13,7 @@ variables:
   WEBAPP_NAME: testyml
   APP_SERVICE_PLAN: ASP-Manojteamsbot-b4ed
   COMPOSE_FILE_PATH: 'docker-compose.yml'
+  DAG_PATH: '/home/dags/' # Default path, will be updated dynamically
 
 stages:
   - stage: Deploy
@@ -40,5 +41,31 @@ stages:
                 
                 # Restart the web app to apply changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
+                
+                # Wait for the web app to start up and create necessary directories
+                echo "Waiting for the web app to be ready..."
+                sleep 60
+                
+                # Verify that the DAGs folder exists and adjust DAG_PATH if needed
+                DAG_PATH="/home/site/wwwroot/dags/"
+                if ! curl -u $(WEBAPP_NAME):$(WEBSITE_PUBLISH_PASSWORD) --head "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/$DAG_PATH"; then
+                  echo "DAGs folder not found, creating..."
+                  curl -X PUT -u $(WEBAPP_NAME):$(WEBSITE_PUBLISH_PASSWORD) "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/$DAG_PATH"
+                fi
+                
+                # Deploy the DAG and requirements.txt
+                echo "Deploying DAG and requirements.txt to Azure Web App..."
+                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+                curl -X PUT -u $(WEBAPP_NAME):$(WEBSITE_PUBLISH_PASSWORD) \
+                --upload-file ./trigger_azure_function_async.py \
+                "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/$DAG_PATH/trigger_azure_function_async.py"
+                
+                curl -X PUT -u $(WEBAPP_NAME):$(WEBSITE_PUBLISH_PASSWORD) \
+                --upload-file ./requirements.txt \
+                "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/$DAG_PATH/requirements.txt"
+                
+                echo "Files deployed successfully."
+                
             displayName: 'Deploy to Azure Web App using Docker Compose'
+
 
