@@ -16,8 +16,8 @@ services:
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
       - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./requirements.txt:/requirements.txt
+      - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
+      - ${WEBAPP_STORAGE_HOME}/requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
     command:
@@ -33,6 +33,7 @@ services:
         echo "Admin user created."
         echo "Starting Airflow Webserver..."
         airflow webserver
+
   airflow-scheduler:
     image: apache/airflow:2.9.3
     environment:
@@ -50,7 +51,7 @@ services:
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
       - AZURE_FUNCTIONS_URL=${AZURE_FUNCTIONS_URL}
     volumes:
-      - ./dags:/opt/airflow/dags
+      - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
     ports:
       - "8080:8080"
     command:
