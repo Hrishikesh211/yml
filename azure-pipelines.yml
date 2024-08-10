@@ -9,9 +9,6 @@ trigger:
   branches:
     include:
       - main
-  paths:
-    include:
-      - dags/**
 
 pool:
   vmImage: 'ubuntu-latest'
