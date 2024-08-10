@@ -17,9 +17,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  RESOURCE_GROUP: testyml_group-9f3b
+  RESOURCE_GROUP: textyml_group
   WEBAPP_NAME: testyml
-  APP_SERVICE_PLAN: ASP-Manojteamsbot-b4ed
+  APP_SERVICE_PLAN: ASP-testdockergroup-965b
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
