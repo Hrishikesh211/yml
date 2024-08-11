@@ -5,7 +5,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__WEBSERVER__BASE_URL=https://testp-fjajgnfygchaaef7.eastus-01.azurewebsites.net
+      - AIRFLOW__WEBSERVER__BASE_URL=https://testml-hvd3aqggabgtdedj.eastus-01.azurewebsites.net
       - _AIRFLOW_DB_MIGRATE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin
@@ -22,3 +22,22 @@ services:
         fi &&
         airflow webserver
     restart: always
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__BASE_URL=https://testml-hvd3aqggabgtdedj.eastus-01.azurewebsites.net
+    command: 
+      - bash
+      - -c
+      - |
+        echo "Waiting for webserver to be ready..."
+        sleep 60
+        echo "Starting Airflow Scheduler..."
+        airflow scheduler
+    restart: always
+    depends_on:
+      - airflow-webserver
