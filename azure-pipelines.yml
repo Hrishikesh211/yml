@@ -34,8 +34,8 @@ stages:
               inlineScript: |
                 echo "Checking if the dags directory exists on the web app..."
 
-                # SSH into the web app to check for the existing dags directory and remove it if found
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
+                # Run a script on the web app to check for the existing dags directory and remove it if found
+                az webapp run --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
                 if [ -d '/home/dags' ]; then
                   echo 'dags directory found. Removing it...'
                   rm -rf /home/dags
@@ -53,8 +53,8 @@ stages:
                 # Use Azure CLI to upload the zip file to the web app's /home directory
                 az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async --target-path /home
 
-                # SSH into the web app and extract the contents of the dags.zip directly to /home
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
+                # Run a script on the web app to extract the contents of the dags.zip directly to /home
+                az webapp run --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
                 unzip /home/dags.zip -d /home/ &&
                 rm -rf /home/dags.zip"
 
@@ -79,3 +79,4 @@ stages:
 
                 echo "Docker Compose deployment completed."
             displayName: 'Deploy Docker Compose to Azure Web App'
+
