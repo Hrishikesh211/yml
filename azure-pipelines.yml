@@ -3,48 +3,53 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-pr: none
-
+# Define the pipeline trigger
 trigger:
   branches:
     include:
       - main
 
+# Specify the pipeline environment
 pool:
   vmImage: 'ubuntu-latest'
 
+# Define pipeline variables
 variables:
   RESOURCE_GROUP: test-1
   WEBAPP_NAME: testp
   APP_SERVICE_PLAN: ASP-testdockergroup-965b
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
+# Define the stages of the pipeline
 stages:
+  # Build Stage
+  - stage: Build
+    jobs:
+      - job: Build
+        steps:
+          # Checkout the code from the repository
+          - checkout: self
+
+          # Publish the 'dags' directory as a pipeline artifact
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: 'dags'
+              artifactName: 'dags'
+            displayName: 'Publish Dags as Artifact'
+
+  # Deploy Stage
   - stage: Deploy
     jobs:
       - job: Deploy
         steps:
-          - checkout: self
-          
-
-          - task: AzureWebApp@1
+          # Download the 'dags' artifact to the build agent's staging directory
+          - task: DownloadPipelineArtifact@2
             inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              appType: 'webAppLinux'
-              appName: '$(WEBAPP_NAME)'
-              package: '$(System.DefaultWorkingDirectory)/dags.zip'
-            displayName: 'Deploy ZIP Package to Azure Web App'
+              artifactName: 'dags'
+              targetPath: '$(Build.ArtifactStagingDirectory)/dags'
+            displayName: 'Download Dags Artifact'
 
-          - task: AzureCLI@2
-            inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "Extracting dags.zip in the Web App..."
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "unzip /home/site/wwwroot/dags.zip -d /home/site/wwwroot/dags"
-                echo "Extraction completed."
-            displayName: 'Extract dags.zip in Azure Web App'
+          # Use Azure CLI to deploy the web app using Docker Compose
           - task: AzureCLI@2
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
@@ -52,14 +57,24 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 echo "Deploying to Azure Web App using Docker Compose..."
+                
+                # Create the web app if it does not exist
                 az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
+                
                 # Ensure the web app exists and configure the settings
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
-                # Configure the web app to use Docker Compose from Docker Hub (public repository)
+                # Create a zip file of the downloaded dags directory
+                cd $(Build.ArtifactStagingDirectory)
+                zip -r dags.zip dags/
+
+                # Deploy the zip file to the web app's /home directory
+                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async --target-path /home
+
+                # Configure the web app to use Docker Compose from the specified file
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
 
-                # Restart the web app to apply changes
+                # Restart the web app to apply the changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
 
                 echo "Docker Compose deployment completed."
