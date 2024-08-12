@@ -16,6 +16,7 @@ pool:
 variables:
   RESOURCE_GROUP: myml_group
   WEBAPP_NAME: myml
+  # APP_SERVICE_PLAN: ASP-testdockergroup-965b
   COMPOSE_FILE_PATH: 'docker-compose.yml'
   DAGS_PATH: 'Dags'
 
@@ -35,6 +36,8 @@ stages:
                 echo "Deploying to Azure Web App using Docker Compose..."
 
                 # Ensure the web app exists
+                # az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
+                # Enable app service storage
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
                 # Configure the web app to use Docker Compose from Docker Hub (public repository)
@@ -59,3 +62,4 @@ stages:
 
                 echo "Dags directory successfully transferred to /home/dags."
             displayName: 'Deploy to Azure Web App using Docker Compose'
+
