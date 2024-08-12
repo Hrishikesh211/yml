@@ -17,6 +17,7 @@ services:
     volumes:
       - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
       - ${WEBAPP_STORAGE_HOME}/logs:/opt/airflow/logs
+
     ports:
       - "8080:8080"
     command:
