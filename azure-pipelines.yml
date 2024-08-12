@@ -34,14 +34,13 @@ stages:
               inlineScript: |
                 echo "Checking if the dags directory exists on the web app..."
 
-                # SSH into the web app to check for the existing dags directory and remove it if found
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
-                if [ -d '/home/dags' ]; then
-                  echo 'dags directory found. Removing it...'
-                  rm -rf /home/dags
+                # Use Kudu API or Azure CLI to check if the /home/dags directory exists
+                if az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "if [ -d '/home/dags' ]; then echo 'exists'; else echo 'not exists'; fi" | grep -q 'exists'; then
+                  echo "dags directory found. Removing it..."
+                  az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "rm -rf /home/dags"
                 else
-                  echo 'dags directory not found. Proceeding...'
-                fi"
+                  echo "dags directory not found. Proceeding..."
+                fi
 
                 echo "Deploying the new dags directory to /home/dags_temp on the web app..."
 
@@ -53,10 +52,8 @@ stages:
                 # Use Azure CLI to upload the zip file to the web app's /home/dags_temp directory
                 az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async --target-path /home/dags_temp
 
-                # SSH into the web app and move the contents to /home/dags
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
-                unzip /home/dags_temp/dags.zip -d /home/dags &&
-                rm -rf /home/dags_temp/dags.zip /home/dags_temp"
+                # Use Azure CLI to move and unzip the contents
+                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "unzip /home/dags_temp/dags.zip -d /home/dags && rm -rf /home/dags_temp/dags.zip /home/dags_temp"
 
                 echo "Dags contents successfully transferred to /home/dags."
 
@@ -79,3 +76,4 @@ stages:
 
                 echo "Docker Compose deployment completed."
             displayName: 'Deploy Docker Compose to Azure Web App'
+
