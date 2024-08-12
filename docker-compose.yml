@@ -43,7 +43,7 @@ services:
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
       - AIRFLOW__WEBSERVER__SECRET_KEY=HdRmUIde3UqviEYoXUm66rMO
     volumes:
-      - ./dags:/opt/airflow/dags
+      - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
     command:
       - bash
       - -c
