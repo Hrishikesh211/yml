@@ -16,6 +16,7 @@ pool:
 variables:
   RESOURCE_GROUP: test-1
   WEBAPP_NAME: testp
+  APP_SERVICE_PLAN: ASP-testdockergroup-965b
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
@@ -42,21 +43,22 @@ stages:
                   echo 'dags directory not found. Proceeding...'
                 fi"
 
-                echo "Deploying the new dags directory to /home/dags on the web app..."
+                echo "Deploying the new dags directory to /home on the web app..."
 
-                # Create a zip file of the dags directory
-                zip -r dags.zip dags
-                
+                # Create a zip file of the contents inside the dags directory
+                cd dags
+                zip -r ../dags.zip ./*
+                cd ..
+
                 # Use Azure CLI to upload the zip file to the web app's /home directory
                 az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async
 
-                # SSH into the web app and move the dags directory directly to /home/dags
+                # SSH into the web app and extract the contents of the dags.zip directly to /home
                 az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
                 unzip /home/site/wwwroot/dags.zip -d /home/ &&
-                mv /home/dags /home/ &&
                 rm -rf /home/site/wwwroot/dags.zip"
 
-                echo "Dags directory successfully transferred to /home/dags."
+                echo "Dags contents successfully transferred to /home."
 
           - task: AzureCLI@2
             inputs:
@@ -65,7 +67,7 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 echo "Deploying to Azure Web App using Docker Compose..."
-
+                az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
                 # Ensure the web app exists and configure the settings
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
