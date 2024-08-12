@@ -13,7 +13,6 @@ services:
       - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-      - AZURE_FUNCTIONS_URL = https://manoj-azure-functions-weaviate.azurewebsites.net/api/weaviate_storage_trigger?code=kROZ6bIGyTQCLHhk3acASnzp3z4tXFw5N17224kkMuFZAzFuXD1bLQ==
     volumes:
       - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
       - ${WEBAPP_STORAGE_HOME}/requirements.txt:/requirements.txt
@@ -46,8 +45,6 @@ services:
       - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
       - AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
       - AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
-      - AZURE_FUNCTIONS_URL = https://manoj-azure-functions-weaviate.azurewebsites.net/api/weaviate_storage_trigger?code=kROZ6bIGyTQCLHhk3acASnzp3z4tXFw5N17224kkMuFZAzFuXD1bLQ==
-
     volumes:
       - ${WEBAPP_STORAGE_HOME}/dags:/opt/airflow/dags
     command:
