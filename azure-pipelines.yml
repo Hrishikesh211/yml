@@ -9,18 +9,15 @@ trigger:
   branches:
     include:
       - main
-  paths:
-    include:
-      - dags/**
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  RESOURCE_GROUP: testyml_group
-  WEBAPP_NAME: testyml
-  APP_SERVICE_PLAN: ASP-testdockergroup-965b
+  RESOURCE_GROUP: myml_group
+  WEBAPP_NAME: myml
   COMPOSE_FILE_PATH: 'docker-compose.yml'
+  DAGS_PATH: 'Dags'
 
 stages:
   - stage: Deploy
@@ -38,11 +35,27 @@ stages:
                 echo "Deploying to Azure Web App using Docker Compose..."
 
                 # Ensure the web app exists
-                az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
-                
+                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+
                 # Configure the web app to use Docker Compose from Docker Hub (public repository)
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
-                
+
                 # Restart the web app to apply changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
+
+                echo "Transferring the dags directory to /home/dags on the web app..."
+                
+                # Create a zip file of the dags directory using the variable for its path
+                zip -r dags.zip $(DAGS_PATH)
+                
+                # Use Azure CLI to upload the zip file to the web app's /home directory
+                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async
+
+                # SSH into the web app and move the dags directory directly to /home/dags
+                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
+                unzip /home/site/wwwroot/dags.zip -d /home/ &&
+                mv /home/dags /home/ &&
+                rm -rf /home/site/wwwroot/dags.zip"
+
+                echo "Dags directory successfully transferred to /home/dags."
             displayName: 'Deploy to Azure Web App using Docker Compose'
