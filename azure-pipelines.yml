@@ -14,11 +14,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  RESOURCE_GROUP: myml_group
-  WEBAPP_NAME: myml
-  # APP_SERVICE_PLAN: ASP-testdockergroup-965b
+  RESOURCE_GROUP: test-1
+  WEBAPP_NAME: testp
   COMPOSE_FILE_PATH: 'docker-compose.yml'
-  DAGS_PATH: 'Dags'
 
 stages:
   - stage: Deploy
@@ -36,8 +34,6 @@ stages:
                 echo "Deploying to Azure Web App using Docker Compose..."
 
                 # Ensure the web app exists
-                # az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
-                # Enable app service storage
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
                 # Configure the web app to use Docker Compose from Docker Hub (public repository)
@@ -48,8 +44,8 @@ stages:
 
                 echo "Transferring the dags directory to /home/dags on the web app..."
                 
-                # Create a zip file of the dags directory using the variable for its path
-                zip -r dags.zip $(DAGS_PATH)
+                # Create a zip file of the dags directory
+                zip -r dags.zip dags
                 
                 # Use Azure CLI to upload the zip file to the web app's /home directory
                 az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async
@@ -62,4 +58,3 @@ stages:
 
                 echo "Dags directory successfully transferred to /home/dags."
             displayName: 'Deploy to Azure Web App using Docker Compose'
-
