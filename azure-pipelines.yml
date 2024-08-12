@@ -31,19 +31,19 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Deploying to Azure Web App using Docker Compose..."
+                echo "Checking if the dags directory exists on the web app..."
 
-                # Ensure the web app exists
-                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+                # SSH into the web app to check for the existing dags directory and remove it if found
+                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
+                if [ -d '/home/dags' ]; then
+                  echo 'dags directory found. Removing it...'
+                  rm -rf /home/dags
+                else
+                  echo 'dags directory not found. Proceeding...'
+                fi"
 
-                # Configure the web app to use Docker Compose from Docker Hub (public repository)
-                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+                echo "Deploying the new dags directory to /home/dags on the web app..."
 
-                # Restart the web app to apply changes
-                az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
-
-                echo "Transferring the dags directory to /home/dags on the web app..."
-                
                 # Create a zip file of the dags directory
                 zip -r dags.zip dags
                 
@@ -57,4 +57,23 @@ stages:
                 rm -rf /home/site/wwwroot/dags.zip"
 
                 echo "Dags directory successfully transferred to /home/dags."
-            displayName: 'Deploy to Azure Web App using Docker Compose'
+
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Deploying to Azure Web App using Docker Compose..."
+
+                # Ensure the web app exists and configure the settings
+                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+
+                # Configure the web app to use Docker Compose from Docker Hub (public repository)
+                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+
+                # Restart the web app to apply changes
+                az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
+
+                echo "Docker Compose deployment completed."
+            displayName: 'Deploy Docker Compose to Azure Web App'
