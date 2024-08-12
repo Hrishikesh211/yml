@@ -25,6 +25,15 @@ stages:
       - job: Deploy
         steps:
           - checkout: self
+          
+
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+              appType: 'webAppLinux'
+              appName: '$(WEBAPP_NAME)'
+              package: '$(System.DefaultWorkingDirectory)/dags.zip'
+            displayName: 'Deploy ZIP Package to Azure Web App'
 
           - task: AzureCLI@2
             inputs:
@@ -32,31 +41,10 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Checking if the dags directory exists on the web app..."
-
-                # Use Kudu API or Azure CLI to check if the /home/dags directory exists
-                if az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "if [ -d '/home/dags' ]; then echo 'exists'; else echo 'not exists'; fi" | grep -q 'exists'; then
-                  echo "dags directory found. Removing it..."
-                  az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "rm -rf /home/dags"
-                else
-                  echo "dags directory not found. Proceeding..."
-                fi
-
-                echo "Deploying the new dags directory to /home/dags_temp on the web app..."
-
-                # Create a zip file of the contents inside the dags directory
-                cd dags
-                zip -r ../dags.zip ./*
-                cd ..
-
-                # Use Azure CLI to upload the zip file to the web app's /home/dags_temp directory
-                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async --target-path /home/dags_temp
-
-                # Use Azure CLI to move and unzip the contents
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "unzip /home/dags_temp/dags.zip -d /home/dags && rm -rf /home/dags_temp/dags.zip /home/dags_temp"
-
-                echo "Dags contents successfully transferred to /home/dags."
-
+                echo "Extracting dags.zip in the Web App..."
+                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "unzip /home/site/wwwroot/dags.zip -d /home/site/wwwroot/dags"
+                echo "Extraction completed."
+            displayName: 'Extract dags.zip in Azure Web App'
           - task: AzureCLI@2
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
@@ -76,4 +64,3 @@ stages:
 
                 echo "Docker Compose deployment completed."
             displayName: 'Deploy Docker Compose to Azure Web App'
-
