@@ -51,12 +51,12 @@ stages:
                 cd ..
 
                 # Use Azure CLI to upload the zip file to the web app's /home directory
-                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async
+                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async --target-path /home
 
                 # SSH into the web app and extract the contents of the dags.zip directly to /home
                 az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
-                unzip /home/site/wwwroot/dags.zip -d /home/ &&
-                rm -rf /home/site/wwwroot/dags.zip"
+                unzip /home/dags.zip -d /home/ &&
+                rm -rf /home/dags.zip"
 
                 echo "Dags contents successfully transferred to /home."
 
