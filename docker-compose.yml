@@ -5,7 +5,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$$xN43O@airflow-app.postgres.database.azure.com:5432/postgres
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__WEBSERVER__BASE_URL=https://testp-fjajgnfygchaaef7.eastus-01.azurewebsites.net
+      - AIRFLOW__WEBSERVER__BASE_URL=https://myml-gxgba7e4fcgyhhff.southindia-01.azurewebsites.net
       - _AIRFLOW_DB_MIGRATE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin
@@ -34,7 +34,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://yuoiyqabqs:KhtjzbA4aw$$xN43O@airflow-app.postgres.database.azure.com:5432/postgres
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__WEBSERVER__BASE_URL=https://testp-fjajgnfygchaaef7.eastus-01.azurewebsites.net
+      - AIRFLOW__WEBSERVER__BASE_URL=https://myml-gxgba7e4fcgyhhff.southindia-01.azurewebsites.net
       - _AIRFLOW_DB_MIGRATE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin
