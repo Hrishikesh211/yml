@@ -4,7 +4,6 @@
 # https://aka.ms/yaml
 
 # Define the pipeline trigger
-# Define the pipeline trigger
 trigger:
   branches:
     include:
@@ -23,72 +22,11 @@ variables:
 
 # Define the stages of the pipeline
 stages:
-  # Build Stage
-  - stage: Build
-    jobs:
-      - job: Build
-        steps:
-          # Checkout the code from the repository
-          - checkout: self
-
-          # Zip the 'dags' directory
-          - task: ArchiveFiles@2
-            inputs:
-              rootFolderOrFile: '$(Build.SourcesDirectory)/dags'
-              includeRootFolder: false
-              archiveType: 'zip'
-              archiveFile: '$(Build.ArtifactStagingDirectory)/dags.zip'
-              replaceExistingArchive: true
-            displayName: 'Zip Dags Directory'
-
-          # Publish the zipped 'dags' directory as a pipeline artifact
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: '$(Build.ArtifactStagingDirectory)/dags.zip'
-              artifactName: 'dags'
-            displayName: 'Publish Dags Zip as Artifact'
-
   # Deploy Stage
   - stage: Deploy
-    dependsOn: Build
     jobs:
       - job: Deploy
         steps:
-          # Download the 'dags' artifact
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifactName: 'dags'
-              targetPath: '$(Build.ArtifactStagingDirectory)'
-            displayName: 'Download Dags Artifact'
-
-          # Deploy the zip file to the Azure Web App using the built-in Azure Web App Deploy task
-          - task: AzureWebApp@1
-            inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              appType: 'webAppLinux'
-              appName: '$(WEBAPP_NAME)'
-              package: '$(Build.ArtifactStagingDirectory)/dags.zip'
-            displayName: 'Deploy Dags Zip to Azure Web App'
-
-          # Use SSH via Azure CLI to unzip the file on the Azure Web App
-          - task: AzureCLI@2
-            inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "Connecting to Azure Web App and unzipping the dags.zip file..."
-
-                # SSH into the Azure Web App and unzip the file in the /home directory
-                az webapp ssh --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --command "
-                cd /home &&
-                unzip dags.zip &&
-                rm -f dags.zip"
-
-                echo "Dags directory unzipped successfully."
-            displayName: 'Unzip Dags on Azure Web App via SSH'
-
-
           # Use Azure CLI to deploy the web app using Docker Compose
           - task: AzureCLI@2
             inputs:
@@ -104,12 +42,12 @@ stages:
                 # Ensure the web app exists and configure the settings
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
-                # Create a zip file of the downloaded dags directory
-                cd $(Build.ArtifactStagingDirectory)
-                zip -r dags.zip dags/
+                # Create a zip file of the dags directory
+                cd $(Build.SourcesDirectory)/dags
+                zip -r dags.zip ./
 
                 # Deploy the zip file to the web app's /home directory
-                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path dags.zip --type zip --async --target-path /home
+                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path $(Build.SourcesDirectory)/dags/dags.zip --type zip --async --target-path /home
 
                 # Configure the web app to use Docker Compose from the specified file
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
