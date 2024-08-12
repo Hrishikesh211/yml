@@ -16,7 +16,7 @@ pool:
 variables:
   RESOURCE_GROUP: test-1
   WEBAPP_NAME: testp
-  APP_SERVICE_PLAN: ASP-testdockergroup-965b
+  # APP_SERVICE_PLAN: ASP-testdockergroup-965b
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
@@ -35,9 +35,9 @@ stages:
                 echo "Deploying to Azure Web App using Docker Compose..."
 
                 # Ensure the web app exists
-                az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
+                # az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
                 # Enable app service storage
-                # az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
                 # Configure the web app to use Docker Compose from Docker Hub (public repository)
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
