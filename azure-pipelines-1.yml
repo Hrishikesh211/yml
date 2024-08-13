@@ -62,14 +62,19 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
+                # Retrieve publishing credentials
+                PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --name $(WEBAPP_NAME) --resource-group $(RESOURCE_GROUP) --query "[?contains(publishMethod, 'MSDeploy')]" --output json)
+                
+                WEBSITE_USERNAME=$(echo $PUBLISH_PROFILE | jq -r '.[0].userName')
+                WEBSITE_PASSWORD=$(echo $PUBLISH_PROFILE | jq -r '.[0].userPWD')
+                
                 # Unzip the deployed file using Kudu
                 ZIP_FILE_PATH="/home/data/SitePackages/$(ZIP_FILE_NAME)"
                 EXTRACT_PATH="/home/dags"
                 
                 echo "Unzipping $ZIP_FILE_PATH to $EXTRACT_PATH"
-                curl -X POST -u \$(WEBSITE_USERNAME):\$(WEBSITE_PASSWORD) https://\$(WEBAPP_NAME).scm.azurewebsites.net/api/command -d "command=unzip $ZIP_FILE_PATH -d $EXTRACT_PATH"
+                curl -X POST -u $WEBSITE_USERNAME:$WEBSITE_PASSWORD https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command -d "command=unzip $ZIP_FILE_PATH -d $EXTRACT_PATH"
             displayName: 'Unzip Deployed DAGS in Azure App Service'
-
 
           
 
