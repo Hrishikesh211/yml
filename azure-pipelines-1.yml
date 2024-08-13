@@ -44,15 +44,24 @@ stages:
             artifact: DagsArtifact
             displayName: 'Download DAGS Artifact'
 
-          - task: AzureWebApp@1
+          # - task: AzureWebApp@1
+          #   inputs:
+          #     azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+          #     appType: 'webAppLinux'
+          #     appName: '$(WEBAPP_NAME)'
+          #     package: '$(Pipeline.Workspace)/DagsArtifact/**'
+          #   displayName: 'Deploy DAGS Directory to Azure Web App'
+            
+          - task: AzureRmWebAppDeployment@4
             inputs:
+              ConnectionType: 'AzureRM'
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               appType: 'webAppLinux'
-              appName: '$(WEBAPP_NAME)'
-              package: '$(Pipeline.Workspace)/DagsArtifact/**'
-            displayName: 'Deploy DAGS Directory to Azure Web App'
+              WebAppName: '$(WEBAPP_NAME)'
+              packageForLinux: '$(Pipeline.Workspace)/$(DAGS_DIR)'
+            displayName: 'Deploy DAGS to Azure Web App'
 
-# trigger:
+  # trigger:
 # - main
 
 # pool:
