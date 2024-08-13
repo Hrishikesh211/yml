@@ -75,9 +75,10 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Unzipping DAGS on Azure Web App..."
+                echo "Creating dags directory and unzipping DAGS on Azure Web App..."
 
                 cd /home/site/wwwroot
+                mkdir -p dags  # Create the dags directory if it doesn't exist
                 unzip -o $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME) -d /home/site/wwwroot/dags
                 rm $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)  # Optionally remove the zip file after unzipping
 
