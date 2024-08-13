@@ -29,19 +29,29 @@ stages:
               TargetFolder: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'  # Where to copy the files
             displayName: 'Copy DAGS Directory'
 
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'
+              ArtifactName: 'DagsArtifact'
+            displayName: 'Publish DAGS Artifact'
+
   - stage: Deploy
     dependsOn: Build
     jobs:
       - job: Deploy
         steps:
+          - download: current
+            artifact: DagsArtifact
+          
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               appType: 'webAppLinux'
               appName: '$(WEBAPP_NAME)'
-              package: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'
+              package: '$(Pipeline.Workspace)/DagsArtifact/$(DAGS_DIR)'
               deploymentMethod: 'runFromPackage'
             displayName: 'Deploy DAGS Directory to Azure Web App'
+
 
 
 
