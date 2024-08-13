@@ -1,3 +1,10 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+pr: none 
+
 # Define the pipeline trigger
 trigger:
   branches:
@@ -51,6 +58,7 @@ stages:
           - task: DownloadPipelineArtifact@2
             inputs:
               artifactName: 'dagsArtifact'
+              targetPath: '$(Pipeline.Workspace)/dagsArtifact'
             displayName: 'Download Zipped DAGS Artifact'
 
           # Step 2: Deploy the zipped DAGS directory to the Azure Web App
