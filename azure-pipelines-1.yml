@@ -56,9 +56,12 @@ stages:
               WebAppName: '$(WEBAPP_NAME)'
               Package: '$(Pipeline.Workspace)/DagsArtifact/dags'
               enableCustomDeployment: true
-              DeploymentType: 'webDeploy'
+              DeploymentType: "webDeploy"
               TakeAppOfflineFlag: false
+              ExcludeFilesFromAppDataFlag: false
+              AdditionalArguments: '-skip:runFromPackage'
             displayName: 'Deploy DAGS to Azure Web App'
+            
 
           # - task: AzureRmWebAppDeployment@4
           #   inputs:
