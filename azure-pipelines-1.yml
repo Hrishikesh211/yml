@@ -85,15 +85,27 @@ stages:
                 PASSWORD=$(echo $PUBLISH_PROFILE | jq -r .userPWD)
 
                 # Upload the ZIP file to the /home/site/wwwroot directory
+                echo "Uploading the ZIP file to /home/site/wwwroot/..."
                 curl -X PUT -u $USERNAME:$PASSWORD --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)" $ZIP_DEPLOY_URL
 
-                echo "ZIP file uploaded. Now unzipping into the 'dags' directory..."
+                echo "ZIP file uploaded to /home/site/wwwroot/."
 
                 # Unzip the uploaded ZIP file into the 'dags' directory under /home/site/wwwroot
+                echo "Unzipping the ZIP file into the /home/site/wwwroot/dags directory..."
+                
+                # Print the current working directory
+                echo "Current working directory before unzipping:"
+                pwd
+                
                 curl -X POST -u $USERNAME:$PASSWORD "${DAGS_FOLDER_URL}?cmd=unzip" --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)"
 
-                echo "Unzipping completed."
+                echo "Unzipping completed in the /home/site/wwwroot/dags directory."
+                
+                # Print the current working directory after unzipping
+                echo "Current working directory after unzipping:"
+                pwd
             displayName: 'Deploy and Unzip DAGS via Kudu API'
+
 
   # Stage 3: Deploy using Docker Compose
   - stage: Deploy
