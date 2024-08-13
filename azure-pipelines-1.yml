@@ -14,67 +14,111 @@ variables:
   WEBAPP_NAME: testp
   vmImageName: 'ubuntu-latest'
   RESOURCE_GROUP: test-1
-  COMPOSE_FILE_PATH: 'docker-compose.yml'
   DAGS_DIR: 'dags' 
-  ZIP_FILE_NAME: 'dags.zip'
 
 stages:
   - stage: Build
     jobs:
       - job: Build
         steps:
-          - task: ArchiveFiles@2
+          - checkout: self
+          - task: CopyFiles@2
             inputs:
-              rootFolderOrFile: '$(Build.SourcesDirectory)/$(DAGS_DIR)'
-              includeRootFolder: false
-              archiveType: 'zip'
-              archiveFile: '$(Build.ArtifactStagingDirectory)/dags.zip'
-              replaceExistingArchive: true
-            displayName: 'Zip DAGS Directory'
-          - task: PublishPipelineArtifact@1
-            inputs:
-              targetPath: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
-              artifactName: 'dagsArtifact'
-            displayName: 'Publish Zipped DAGS as Pipeline Artifact'
+              SourceFolder: '$(Build.SourcesDirectory)'  # Specifies the root directory of the repository
+              Contents: '**'  # All files and folders
+              TargetFolder: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'  # Where to copy the files
+            displayName: 'Copy DAGS Directory'
 
-  - stage: DeployAndUnzip
+  - stage: Deploy
     dependsOn: Build
     jobs:
-      - job: DeployAndUnzip
+      - job: Deploy
         steps:
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifactName: 'dagsArtifact'
-              path: '$(Pipeline.Workspace)/dagsArtifact'
-            displayName: 'Download Zipped DAGS Artifact'
-            
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               appType: 'webAppLinux'
               appName: '$(WEBAPP_NAME)'
-              package: '$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)'
-            displayName: 'Deploy Zipped DAGS to Azure Web App'
+              package: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'
+              deploymentMethod: 'runFromPackage'
+            displayName: 'Deploy DAGS Directory to Azure Web App'
 
-          - task: AzureCLI@2
-            inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                # Retrieve publishing credentials
-                PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --name $(WEBAPP_NAME) --resource-group $(RESOURCE_GROUP) --query "[?contains(publishMethod, 'MSDeploy')]" --output json)
+
+
+
+
+# trigger:
+# - main
+
+# pool:
+#   vmImage: 'ubuntu-latest'
+
+# variables:
+#   azureServiceConnectionId: '5a4c5312-e538-4725-97d6-fe77c1d4e140'
+#   WEBAPP_NAME: testp
+#   vmImageName: 'ubuntu-latest'
+#   RESOURCE_GROUP: test-1
+#   COMPOSE_FILE_PATH: 'docker-compose.yml'
+#   DAGS_DIR: 'dags' 
+#   ZIP_FILE_NAME: 'dags.zip'
+
+# stages:
+#   - stage: Build
+#     jobs:
+#       - job: Build
+#         steps:
+#           - task: ArchiveFiles@2
+#             inputs:
+#               rootFolderOrFile: '$(Build.SourcesDirectory)/$(DAGS_DIR)'
+#               includeRootFolder: false
+#               archiveType: 'zip'
+#               archiveFile: '$(Build.ArtifactStagingDirectory)/dags.zip'
+#               replaceExistingArchive: true
+#             displayName: 'Zip DAGS Directory'
+#           - task: PublishPipelineArtifact@1
+#             inputs:
+#               targetPath: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
+#               artifactName: 'dagsArtifact'
+#             displayName: 'Publish Zipped DAGS as Pipeline Artifact'
+
+#   - stage: DeployAndUnzip
+#     dependsOn: Build
+#     jobs:
+#       - job: DeployAndUnzip
+#         steps:
+#           - task: DownloadPipelineArtifact@2
+#             inputs:
+#               artifactName: 'dagsArtifact'
+#               path: '$(Pipeline.Workspace)/dagsArtifact'
+#             displayName: 'Download Zipped DAGS Artifact'
+            
+#           - task: AzureWebApp@1
+#             inputs:
+#               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+#               appType: 'webAppLinux'
+#               appName: '$(WEBAPP_NAME)'
+#               package: '$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)'
+#             displayName: 'Deploy Zipped DAGS to Azure Web App'
+
+#           - task: AzureCLI@2
+#             inputs:
+#               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+#               scriptType: 'bash'
+#               scriptLocation: 'inlineScript'
+#               inlineScript: |
+#                 # Retrieve publishing credentials
+#                 PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --name $(WEBAPP_NAME) --resource-group $(RESOURCE_GROUP) --query "[?contains(publishMethod, 'MSDeploy')]" --output json)
                 
-                WEBSITE_USERNAME=$(echo $PUBLISH_PROFILE | jq -r '.[0].userName')
-                WEBSITE_PASSWORD=$(echo $PUBLISH_PROFILE | jq -r '.[0].userPWD')
+#                 WEBSITE_USERNAME=$(echo $PUBLISH_PROFILE | jq -r '.[0].userName')
+#                 WEBSITE_PASSWORD=$(echo $PUBLISH_PROFILE | jq -r '.[0].userPWD')
                 
-                # Unzip the deployed file using Kudu
-                ZIP_FILE_PATH="/home/data/SitePackages/$(ZIP_FILE_NAME)"
-                EXTRACT_PATH="/home/dags"
+#                 # Unzip the deployed file using Kudu
+#                 ZIP_FILE_PATH="/home/data/SitePackages/$(ZIP_FILE_NAME)"
+#                 EXTRACT_PATH="/home/dags"
                 
-                echo "Unzipping $ZIP_FILE_PATH to $EXTRACT_PATH"
-                curl -X POST -u $WEBSITE_USERNAME:$WEBSITE_PASSWORD https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command -d "command=unzip $ZIP_FILE_PATH -d $EXTRACT_PATH"
-            displayName: 'Unzip Deployed DAGS in Azure App Service'
+#                 echo "Unzipping $ZIP_FILE_PATH to $EXTRACT_PATH"
+#                 curl -X POST -u $WEBSITE_USERNAME:$WEBSITE_PASSWORD https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command -d "command=unzip $ZIP_FILE_PATH -d $EXTRACT_PATH"
+#             displayName: 'Unzip Deployed DAGS in Azure App Service'
 
 
   # # Stage 3: Deploy using Docker Compose
