@@ -47,37 +47,44 @@ stages:
               artifactName: 'dagsArtifact'
               path: '$(Pipeline.Workspace)/dagsArtifact'
             displayName: 'Download Zipped DAGS Artifact'
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+              appType: 'webAppLinux'
+              appName: '$(WEBAPP_NAME)'
+              package: '$(Pipeline.Workspace)/dagsArtifact/dags.zip'
+            displayName: 'Deploy Zipped DAGS to Azure Web App'
 
           - task: AzureCLI@2
             inputs:
-              azureSubscription: '$(azureServiceConnectionId)'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
                 echo "Deploying ZIP to Azure Web App via Kudu API..."
-
+                
                 # Define Kudu API URL for /site/wwwroot directory
                 KUDU_API_BASE_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/site/wwwroot/"
                 ZIP_DEPLOY_URL="${KUDU_API_BASE_URL}$(ZIP_FILE_NAME)"
-
+                
                 # Get Kudu API credentials
                 PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --query "[0]" --output json)
                 USERNAME=$(echo $PUBLISH_PROFILE | jq -r .userName)
                 PASSWORD=$(echo $PUBLISH_PROFILE | jq -r .userPWD)
-
+                
                 # Upload the ZIP file to the /site/wwwroot/ directory
                 echo "Uploading the ZIP file to /site/wwwroot/..."
                 curl -X PUT -u $USERNAME:$PASSWORD --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)" $ZIP_DEPLOY_URL
-
+                
                 echo "ZIP file uploaded to /site/wwwroot/."
-
+                
                 # Unzip the uploaded ZIP file into the /site/wwwroot/dags directory
                 echo "Unzipping the ZIP file into the /site/wwwroot/dags directory..."
                 UNZIP_COMMAND_API_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command"
                 curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "unzip /site/wwwroot/$(ZIP_FILE_NAME) -d /site/wwwroot/$(DAGS_DIR)"}' $UNZIP_COMMAND_API_URL
-
+                
                 echo "Unzipping completed in the /site/wwwroot/dags directory."
-
+                
                 # List the contents of the /site/wwwroot/dags directory in Kudu
                 echo "Listing the contents of the /site/wwwroot/dags directory..."
                 curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "ls -la /site/wwwroot/$(DAGS_DIR)"}' $UNZIP_COMMAND_API_URL
@@ -99,20 +106,20 @@ stages:
           # Step 1: Deploy the web app using Docker Compose
           - task: AzureCLI@2
             inputs:
-              azureSubscription: '$(azureServiceConnectionId)'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
                 echo "Deploying to Azure Web App using Docker Compose..."
-
+                
                 # Ensure the web app exists and configure the settings
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
-
+                
                 # Configure the web app to use Docker Compose from the specified file
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
-
+                
                 # Restart the web app to apply the changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
-
+                
                 echo "Docker Compose deployment completed."
             displayName: 'Deploy Docker Compose to Azure Web App'
