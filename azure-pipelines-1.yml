@@ -1,0 +1,126 @@
+# Python to Linux Web App on Azure
+# Build your Python project and deploy it to Azure as a Linux Web App.
+# Change python version to one thats appropriate for your application.
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Azure Resource Manager connection created during pipeline creation
+  azureServiceConnectionId: '5a4c5312-e538-4725-97d6-fe77c1d4e140'
+
+  # Web app name
+  WEBAPP_NAME: testp
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+  # Environment name
+  environmentName: ''
+
+  RESOURCE_GROUP: test-1
+
+  COMPOSE_FILE_PATH: 'docker-compose.yml'
+
+  DAGS_DIR: 'dags' 
+
+  ZIP_FILE_NAME: 'dags.zip'
+
+# Define the stages of the pipeline
+stages:
+
+  # Stage 1: Build
+  - stage: Build
+    jobs:
+      - job: Build
+        steps:
+          # Step 1: Zip the DAGS directory
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: '$(Build.SourcesDirectory)/$(DAGS_DIR)'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
+              replaceExistingArchive: true
+            displayName: 'Zip DAGS Directory'
+
+          # Step 2: Publish the zipped file as a pipeline artifact
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
+              artifactName: 'dagsArtifact'
+            displayName: 'Publish Zipped DAGS as Pipeline Artifact'
+
+  # Stage 2: Deploy and Unzip using Kudu API
+  - stage: DeployAndUnzip
+    dependsOn: Build
+    jobs:
+      - job: DeployAndUnzip
+        steps:
+          # Step 1: Download the zipped file artifact
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: 'dagsArtifact'
+              path: '$(Pipeline.Workspace)/dagsArtifact'
+            displayName: 'Download Zipped DAGS Artifact'
+
+          # Step 2: Deploy and Unzip DAGS using Kudu API
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: '$(azureServiceConnectionId)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Deploying ZIP to Azure Web App via Kudu API..."
+
+                # Define Kudu API URL
+                KUDU_API_BASE_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/site/wwwroot/"
+                ZIP_DEPLOY_URL="${KUDU_API_BASE_URL}$(ZIP_FILE_NAME)"
+                DAGS_FOLDER_URL="${KUDU_API_BASE_URL}$(DAGS_DIR)/"
+
+                # Get Kudu API credentials
+                PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --query "[0]" --output json)
+                USERNAME=$(echo $PUBLISH_PROFILE | jq -r .userName)
+                PASSWORD=$(echo $PUBLISH_PROFILE | jq -r .userPWD)
+
+                # Upload the ZIP file to the root directory
+                curl -X PUT -u $USERNAME:$PASSWORD --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)" $ZIP_DEPLOY_URL
+
+                echo "ZIP file uploaded. Now unzipping into the 'dags' directory..."
+
+                # Unzip the uploaded ZIP file into the 'dags' directory
+                curl -X POST -u $USERNAME:$PASSWORD "$DAGS_FOLDER_URL?cmd=unzip" --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)"
+
+                echo "Unzipping completed."
+            displayName: 'Deploy and Unzip DAGS via Kudu API'
+
+  # Stage 3: Deploy using Docker Compose
+  - stage: Deploy
+    dependsOn: DeployAndUnzip
+    jobs:
+      - job: Deploy
+        steps:
+          # Step 1: Deploy the web app using Docker Compose
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: '$(azureServiceConnectionId)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Deploying to Azure Web App using Docker Compose..."
+
+                # Ensure the web app exists and configure the settings
+                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+
+                # Configure the web app to use Docker Compose from the specified file
+                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+
+                # Restart the web app to apply the changes
+                az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
+
+                echo "Docker Compose deployment completed."
+            displayName: 'Deploy Docker Compose to Azure Web App'
