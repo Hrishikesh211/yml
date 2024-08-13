@@ -76,7 +76,6 @@ stages:
                 curl -X POST -u $WEBSITE_USERNAME:$WEBSITE_PASSWORD https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command -d "command=unzip $ZIP_FILE_PATH -d $EXTRACT_PATH"
             displayName: 'Unzip Deployed DAGS in Azure App Service'
 
-          
 
   # # Stage 3: Deploy using Docker Compose
   # - stage: Deploy
