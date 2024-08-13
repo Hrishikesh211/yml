@@ -58,14 +58,12 @@ stages:
     jobs:
       - job: DeployAndUnzip
         steps:
-          # Step 1: Download the zipped file artifact
           - task: DownloadPipelineArtifact@2
             inputs:
               artifactName: 'dagsArtifact'
               path: '$(Pipeline.Workspace)/dagsArtifact'
             displayName: 'Download Zipped DAGS Artifact'
 
-          # Step 2: Deploy and Unzip DAGS using Kudu API
           - task: AzureCLI@2
             inputs:
               azureSubscription: '$(azureServiceConnectionId)'
@@ -84,10 +82,17 @@ stages:
                 USERNAME=$(echo $PUBLISH_PROFILE | jq -r .userName)
                 PASSWORD=$(echo $PUBLISH_PROFILE | jq -r .userPWD)
 
-                # Create the dags directory in /home if it doesn't exist
-                echo "Creating the /home/dags directory if it doesn't exist..."
-                KUDU_COMMAND_API_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command"
-                curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "mkdir -p /home/dags"}' $KUDU_COMMAND_API_URL
+                # Check if the /home/dags directory exists
+                echo "Checking if the /home/dags directory exists..."
+                HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -u $USERNAME:$PASSWORD -X GET $DAGS_FOLDER_URL)
+
+                if [ $HTTP_RESPONSE -eq 200 ]; then
+                  echo "/home/dags directory already exists."
+                else
+                  echo "/home/dags directory does not exist. Creating it now..."
+                  KUDU_COMMAND_API_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command"
+                  curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "mkdir -p /home/dags"}' $KUDU_COMMAND_API_URL
+                fi
 
                 # Upload the ZIP file to the /home directory
                 echo "Uploading the ZIP file to /home/..."
@@ -104,10 +109,9 @@ stages:
                 # List the contents of the /home/dags directory in Kudu
                 echo "Listing the contents of the /home/dags directory..."
                 curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "ls -la /home/dags"}' $KUDU_COMMAND_API_URL
-                pwd
             displayName: 'Deploy, Unzip, and Check /home/dags in Kudu'
 
-
+        
 
   # Stage 3: Deploy using Docker Compose
   - stage: Deploy
