@@ -47,42 +47,13 @@ stages:
               artifactName: 'dagsArtifact'
               path: '$(Pipeline.Workspace)/dagsArtifact'
             displayName: 'Download Zipped DAGS Artifact'
-          
-          - task: AzureCLI@2
+          - task: AzureWebApp@1
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "Deploying ZIP to Azure Web App via Kudu API..."
-                
-                # Define Kudu API URL for zipdeploy
-                ZIPDEPLOY_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/zipdeploy"
-
-                # Get Kudu API credentials
-                PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --query "[0]" --output json)
-                USERNAME=$(echo $PUBLISH_PROFILE | jq -r .userName)
-                PASSWORD=$(echo $PUBLISH_PROFILE | jq -r .userPWD)
-                
-                # Deploy the ZIP file using the zipdeploy API
-                echo "Deploying the ZIP file to /home directory using zipdeploy API..."
-                curl -X POST -u $USERNAME:$PASSWORD --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)" $ZIPDEPLOY_URL
-                
-                echo "Deployment completed."
-                
-                # List the contents of the /home directory in Kudu
-                echo "Listing the contents of the /home directory..."
-                LIST_COMMAND_API_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command"
-                curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "ls -la /home"}' $LIST_COMMAND_API_URL
-                
-                # Print the current working directory using pwd
-                echo "Checking the current working directory..."
-                curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "pwd"}' $LIST_COMMAND_API_URL
-            displayName: 'Deploy, Check Directory, and List Contents'
-
-
-
-        
+              appType: 'webAppLinux'
+              appName: '$(WEBAPP_NAME)'
+              package: '$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)'
+            displayName: 'Deploy Zipped DAGS to Azure Web App'
 
   # # Stage 3: Deploy using Docker Compose
   # - stage: Deploy
