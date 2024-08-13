@@ -44,6 +44,22 @@ stages:
             artifact: DagsArtifact
             displayName: 'Download DAGS Artifact'
 
+          - script: ls -R $(Pipeline.Workspace)
+            displayName: 'List files in workspace'
+
+          - script: ls -R $(Pipeline.Workspace)/$(DAGS_DIR)
+            displayName: 'List files in DAGS directory'
+
+          - task: AzureRmWebAppDeployment@4
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+              appType: 'webAppLinux'
+              WebAppName: '$(WEBAPP_NAME)'
+              packageForLinux: '$(Pipeline.Workspace)/DagsArtifact/$(DAGS_DIR)'  # Adjusted path
+            displayName: 'Deploy DAGS to Azure Web App'
+
+
           # - task: AzureWebApp@1
           #   inputs:
           #     azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
@@ -52,15 +68,6 @@ stages:
           #     package: '$(Pipeline.Workspace)/DagsArtifact/**'
           #   displayName: 'Deploy DAGS Directory to Azure Web App'
             
-          - task: AzureRmWebAppDeployment@4
-            inputs:
-              ConnectionType: 'AzureRM'
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              appType: 'webAppLinux'
-              WebAppName: '$(WEBAPP_NAME)'
-              packageForLinux: '$(Pipeline.Workspace)/$(DAGS_DIR)'
-            displayName: 'Deploy DAGS to Azure Web App'
-
   # trigger:
 # - main
 
