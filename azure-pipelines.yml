@@ -79,7 +79,7 @@ stages:
                 echo "Unzipping DAGS on Azure Web App..."
 
                 # Navigate to the wwwroot directory
-                cd /home/site/wwwroot
+                cd home/
                 
                 # Create the dags directory if it does not exist
                 if [ ! -d "dags" ]; then
@@ -88,7 +88,7 @@ stages:
                 fi
 
                 # Unzip the file into the dags directory
-                unzip -o $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME) -d /home/site/wwwroot/dags
+                unzip -o $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME) -d home/dags
                 
                 # Optionally remove the zip file after unzipping
                 rm $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)
