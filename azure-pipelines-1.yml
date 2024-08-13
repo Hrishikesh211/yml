@@ -104,6 +104,7 @@ stages:
                 # List the contents of the /home/dags directory in Kudu
                 echo "Listing the contents of the /home/dags directory..."
                 curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "ls -la /home/dags"}' $KUDU_COMMAND_API_URL
+                pwd
             displayName: 'Deploy, Unzip, and Check /home/dags in Kudu'
 
 
