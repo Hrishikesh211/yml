@@ -51,7 +51,7 @@ stages:
           - task: AzureRmWebAppDeployment@4
             inputs:
               ConnectionType: 'AzureRM'
-              azureSubscription: '$(azureServiceConnectionId)'
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               appType: 'webAppLinux'
               WebAppName: '$(WEBAPP_NAME)'
               Package: '$(Pipeline.Workspace)/DagsArtifact/dags'
