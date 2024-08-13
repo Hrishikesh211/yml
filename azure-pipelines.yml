@@ -57,12 +57,12 @@ stages:
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              appType: 'webApp'
+              appType: 'webAppLinux'
               appName: '$(WEBAPP_NAME)'
               package: '$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)'
             displayName: 'Deploy Zipped DAGS to Azure Web App'
 
-          # Step 3: Unzip the DAGS directory on the Azure Web App
+          # Step 3: Unzip the DAGS directory without using an absolute path
           - task: AzureCLI@2
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
@@ -71,12 +71,13 @@ stages:
               inlineScript: |
                 echo "Unzipping DAGS on Azure Web App..."
 
-                cd /home/site/wwwroot
-                unzip -o $(ZIP_FILE_NAME) -d /home/site/wwwroot/dags
+                mkdir -p dags/  # Create the dags folder if it doesn't exist
+                unzip -o $(ZIP_FILE_NAME) -d dags/
                 rm $(ZIP_FILE_NAME)  # Optionally remove the zip file after unzipping
 
                 echo "Unzipping completed."
             displayName: 'Unzip DAGS on Azure Web App'
+
 
   # Stage 3: Deploy
   - stage: Deploy
