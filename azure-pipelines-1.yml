@@ -74,37 +74,38 @@ stages:
               inlineScript: |
                 echo "Deploying ZIP to Azure Web App via Kudu API..."
 
-                # Define Kudu API URL for /home/site/wwwroot directory
-                KUDU_API_BASE_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/home/site/wwwroot/"
+                # Define Kudu API URL for /home directory
+                KUDU_API_BASE_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/home/"
                 ZIP_DEPLOY_URL="${KUDU_API_BASE_URL}$(ZIP_FILE_NAME)"
-                DAGS_FOLDER_URL="${KUDU_API_BASE_URL}$(DAGS_DIR)/"
+                DAGS_FOLDER_URL="${KUDU_API_BASE_URL}dags/"
 
                 # Get Kudu API credentials
                 PUBLISH_PROFILE=$(az webapp deployment list-publishing-profiles --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --query "[0]" --output json)
                 USERNAME=$(echo $PUBLISH_PROFILE | jq -r .userName)
                 PASSWORD=$(echo $PUBLISH_PROFILE | jq -r .userPWD)
 
-                # Upload the ZIP file to the /home/site/wwwroot directory
-                echo "Uploading the ZIP file to /home/site/wwwroot/..."
+                # Create the dags directory in /home if it doesn't exist
+                echo "Creating the /home/dags directory if it doesn't exist..."
+                KUDU_COMMAND_API_URL="https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command"
+                curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "mkdir -p /home/dags"}' $KUDU_COMMAND_API_URL
+
+                # Upload the ZIP file to the /home directory
+                echo "Uploading the ZIP file to /home/..."
                 curl -X PUT -u $USERNAME:$PASSWORD --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)" $ZIP_DEPLOY_URL
 
-                echo "ZIP file uploaded to /home/site/wwwroot/."
+                echo "ZIP file uploaded to /home/."
 
-                # Unzip the uploaded ZIP file into the 'dags' directory under /home/site/wwwroot
-                echo "Unzipping the ZIP file into the /home/site/wwwroot/dags directory..."
-                
-                # Print the current working directory
-                echo "Current working directory before unzipping:"
-                pwd
-                
+                # Unzip the uploaded ZIP file into the /home/dags directory
+                echo "Unzipping the ZIP file into the /home/dags directory..."
                 curl -X POST -u $USERNAME:$PASSWORD "${DAGS_FOLDER_URL}?cmd=unzip" --data-binary @"$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)"
 
-                echo "Unzipping completed in the /home/site/wwwroot/dags directory."
-                
-                # Print the current working directory after unzipping
-                echo "Current working directory after unzipping:"
-                pwd
-            displayName: 'Deploy and Unzip DAGS via Kudu API'
+                echo "Unzipping completed in the /home/dags directory."
+
+                # List the contents of the /home/dags directory in Kudu
+                echo "Listing the contents of the /home/dags directory..."
+                curl -X POST -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -d '{"command": "ls -la /home/dags"}' $KUDU_COMMAND_API_URL
+            displayName: 'Deploy, Unzip, and Check /home/dags in Kudu'
+
 
 
   # Stage 3: Deploy using Docker Compose
