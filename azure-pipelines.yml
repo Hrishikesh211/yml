@@ -1,24 +1,30 @@
+# Define the pipeline trigger
 trigger:
   branches:
     include:
       - main
 
+# Specify the pipeline environment
 pool:
   vmImage: 'ubuntu-latest'
 
+# Define pipeline variables
 variables:
   RESOURCE_GROUP: test-1
   WEBAPP_NAME: testp
   COMPOSE_FILE_PATH: 'docker-compose.yml'
-  DAGS_DIR: 'dags'
-  ZIP_FILE_NAME: 'dags.zip'
+  DAGS_DIR: 'dags'  # Directory containing DAGs
+  ZIP_FILE_NAME: 'dags.zip'  # Name of the zip file
 
+# Define the stages of the pipeline
 stages:
 
+  # Stage 1: Build
   - stage: Build
     jobs:
       - job: Build
         steps:
+          # Step 1: Zip the DAGS directory
           - task: ArchiveFiles@2
             inputs:
               rootFolderOrFile: '$(Build.SourcesDirectory)/$(DAGS_DIR)'
@@ -28,32 +34,35 @@ stages:
               replaceExistingArchive: true
             displayName: 'Zip DAGS Directory'
 
+          # Step 2: Publish the zipped file as a pipeline artifact
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
               artifactName: 'dagsArtifact'
             displayName: 'Publish Zipped DAGS as Pipeline Artifact'
 
-  - stage: UnzipAndDeploy
+  # Stage 2: Unzipping
+  - stage: Unzip
     dependsOn: Build
     jobs:
-      - job: UnzipAndDeploy
+      - job: Unzip
         steps:
+          # Step 1: Download the zipped file artifact
           - task: DownloadPipelineArtifact@2
             inputs:
-              artifact: 'dagsArtifact'
-              path: '$(Pipeline.Workspace)/dagsArtifact'
+              artifactName: 'dagsArtifact'
             displayName: 'Download Zipped DAGS Artifact'
 
+          # Step 2: Deploy the zipped DAGS directory to the Azure Web App
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              appType: 'webAppLinux'
+              appType: 'webApp'
               appName: '$(WEBAPP_NAME)'
               package: '$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)'
-              runtimeStack: 'PYTHON|3.11'
             displayName: 'Deploy Zipped DAGS to Azure Web App'
 
+          # Step 3: Unzip the DAGS directory on the Azure Web App
           - task: AzureCLI@2
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
@@ -61,24 +70,21 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 echo "Unzipping DAGS on Azure Web App..."
-                
-                if [ ! -d "/home/site/wwwroot" ]; then
-                  echo "/home/site/wwwroot directory does not exist. Exiting..."
-                  exit 1
-                fi
-                
-                mkdir -p /home/site/wwwroot/dags
-                unzip -o $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME) -d /home/site/wwwroot/dags
-                rm $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)
-                
+
+                cd /home/site/wwwroot
+                unzip -o $(ZIP_FILE_NAME) -d /home/site/wwwroot/dags
+                rm $(ZIP_FILE_NAME)  # Optionally remove the zip file after unzipping
+
                 echo "Unzipping completed."
             displayName: 'Unzip DAGS on Azure Web App'
 
+  # Stage 3: Deploy
   - stage: Deploy
-    dependsOn: UnzipAndDeploy
+    dependsOn: Unzip
     jobs:
       - job: Deploy
         steps:
+          # Step 1: Deploy the web app using Docker Compose
           - task: AzureCLI@2
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
@@ -86,10 +92,15 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 echo "Deploying to Azure Web App using Docker Compose..."
-                
+
+                # Ensure the web app exists and configure the settings
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+
+                # Configure the web app to use Docker Compose from the specified file
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+
+                # Restart the web app to apply the changes
                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME)
-                
+
                 echo "Docker Compose deployment completed."
             displayName: 'Deploy Docker Compose to Azure Web App'
