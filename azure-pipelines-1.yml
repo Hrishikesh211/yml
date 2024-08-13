@@ -19,9 +19,6 @@ variables:
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
-  # Environment name
-  environmentName: ''
-
   RESOURCE_GROUP: test-1
 
   COMPOSE_FILE_PATH: 'docker-compose.yml'
