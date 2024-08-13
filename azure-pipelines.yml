@@ -1,9 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-# Define the pipeline trigger
 trigger:
   branches:
     include:
@@ -55,7 +49,7 @@ stages:
             inputs:
               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
               appType: 'webAppLinux'
-              appName: 'testp'
+              appName: '$(WEBAPP_NAME)'
               package: '$(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)'
               runtimeStack: 'PYTHON|3.11'
             displayName: 'Deploy Zipped DAGS to Azure Web App'
@@ -68,10 +62,14 @@ stages:
               inlineScript: |
                 echo "Unzipping DAGS on Azure Web App..."
                 
-                cd /home/site/wwwroot || exit
-                mkdir -p dags
-                unzip -o site.zip -d dags
-                rm site.zip
+                if [ ! -d "/home/site/wwwroot" ]; then
+                  echo "/home/site/wwwroot directory does not exist. Exiting..."
+                  exit 1
+                fi
+                
+                mkdir -p /home/site/wwwroot/dags
+                unzip -o $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME) -d /home/site/wwwroot/dags
+                rm $(Pipeline.Workspace)/dagsArtifact/$(ZIP_FILE_NAME)
                 
                 echo "Unzipping completed."
             displayName: 'Unzip DAGS on Azure Web App'
