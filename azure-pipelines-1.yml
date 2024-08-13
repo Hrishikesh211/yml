@@ -12,9 +12,8 @@ pool:
 variables:
   azureServiceConnectionId: '5a4c5312-e538-4725-97d6-fe77c1d4e140'
   WEBAPP_NAME: testp
-  vmImageName: 'ubuntu-latest'
   RESOURCE_GROUP: test-1
-  DAGS_DIR: 'dags' 
+  DAGS_DIR: 'dags'
 
 stages:
   - stage: Build
@@ -46,43 +45,27 @@ stages:
 
           - script: ls -R $(Pipeline.Workspace)
             displayName: 'List files in workspace'
-          
 
-          - task: AzureRmWebAppDeployment@4
+          - task: AzureCLI@2
             inputs:
-              ConnectionType: 'AzureRM'
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              appType: 'webAppLinux'
-              WebAppName: '$(WEBAPP_NAME)'
-              Package: '$(Pipeline.Workspace)/DagsArtifact/dags'
-              enableCustomDeployment: true
-              DeploymentType: "webDeploy"
-              TakeAppOfflineFlag: false
-              ExcludeFilesFromAppDataFlag: false
-              AdditionalArguments: '-skip:runFromPackage'
-            displayName: 'Deploy DAGS to Azure Web App'
-            
+              azureSubscription: '$(azureServiceConnectionId)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Get the publishing credentials for the web app
+                CREDS=$(az webapp deployment list-publishing-credentials --name $(WEBAPP_NAME) --resource-group $(RESOURCE_GROUP) --query '[{username:publishingUserName,password:publishingPassword}]' -o tsv)
+                USER=$(echo $CREDS | cut -f1)
+                PASS=$(echo $CREDS | cut -f2)
 
-          # - task: AzureRmWebAppDeployment@4
-          #   inputs:
-          #     ConnectionType: 'AzureRM'
-          #     azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-          #     appType: 'webAppLinux'
-          #     WebAppName: '$(WEBAPP_NAME)'
-          #     packageForLinux: '$(Pipeline.Workspace)/DagsArtifact/$(DAGS_DIR)'
-          #     enabl  # Adjusted path
-          #   displayName: 'Deploy DAGS to Azure Web App'
+                # Create the target directory on the web app using Kudu API
+                curl -u $USER:$PASS -X POST "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/command" \
+                    -d '{ "command": "mkdir -p /home/site/wwwroot/$(DAGS_DIR)" }'
 
+                # Deploy the files using Kudu API
+                curl -u $USER:$PASS -X PUT -T "$(Pipeline.Workspace)/DagsArtifact/$(DAGS_DIR)" \
+                    "https://$(WEBAPP_NAME).scm.azurewebsites.net/api/vfs/site/wwwroot/$(DAGS_DIR)/"
+            displayName: 'Deploy DAGS Directory to Azure Web App'
 
-
-          # - task: AzureWebApp@1
-          #   inputs:
-          #     azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-          #     appType: 'webAppLinux'
-          #     appName: '$(WEBAPP_NAME)'
-          #     package: '$(Pipeline.Workspace)/DagsArtifact/**'
-          #   displayName: 'Deploy DAGS Directory to Azure Web App'
-            
   # trigger:
 # - main
 
