@@ -24,9 +24,9 @@ stages:
           - checkout: self
           - task: CopyFiles@2
             inputs:
-              SourceFolder: '$(Build.SourcesDirectory)'  # Specifies the root directory of the repository
-              Contents: '**'  # All files and folders
-              TargetFolder: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'  # Where to copy the files
+              SourceFolder: '$(Build.SourcesDirectory)'
+              Contents: '**'
+              TargetFolder: '$(Build.ArtifactStagingDirectory)/$(DAGS_DIR)'
             displayName: 'Copy DAGS Directory'
 
           - task: PublishBuildArtifacts@1
@@ -47,9 +47,6 @@ stages:
           - script: ls -R $(Pipeline.Workspace)
             displayName: 'List files in workspace'
 
-          - script: ls -R $(Pipeline.Workspace)/$(DAGS_DIR)
-            displayName: 'List files in DAGS directory'
-
           - task: AzureRmWebAppDeployment@4
             inputs:
               ConnectionType: 'AzureRM'
@@ -58,6 +55,7 @@ stages:
               WebAppName: '$(WEBAPP_NAME)'
               packageForLinux: '$(Pipeline.Workspace)/DagsArtifact/$(DAGS_DIR)'  # Adjusted path
             displayName: 'Deploy DAGS to Azure Web App'
+
 
 
           # - task: AzureWebApp@1
