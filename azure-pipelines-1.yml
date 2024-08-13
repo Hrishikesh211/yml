@@ -28,10 +28,9 @@ stages:
               rootFolderOrFile: '$(Build.SourcesDirectory)/$(DAGS_DIR)'
               includeRootFolder: false
               archiveType: 'zip'
-              archiveFile: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/dags.zip'
               replaceExistingArchive: true
             displayName: 'Zip DAGS Directory'
-
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: '$(Build.ArtifactStagingDirectory)/$(ZIP_FILE_NAME)'
