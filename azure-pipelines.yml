@@ -17,7 +17,7 @@ pool:
 variables:
   RESOURCE_GROUP: test-1
   WEBAPP_NAME: testp
-  APP_SERVICE_PLAN: ASP-testdockergroup-965b
+  # APP_SERVICE_PLAN: ASP-testdockergroup-965b
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 # Define the stages of the pipeline
@@ -37,17 +37,10 @@ stages:
                 echo "Deploying to Azure Web App using Docker Compose..."
                 
                 # Create the web app if it does not exist
-                az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
+                # az webapp create --resource-group $(RESOURCE_GROUP) --plan $(APP_SERVICE_PLAN) --name $(WEBAPP_NAME) || true
                 
                 # Ensure the web app exists and configure the settings
                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
-
-                # Create a zip file of the dags directory
-                cd $(Build.SourcesDirectory)/dags
-                zip -r dags.zip ./
-
-                # Deploy the zip file to the web app's /home directory
-                az webapp deploy --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --src-path $(Build.SourcesDirectory)/dags/dags.zip --type zip --async --target-path /home
 
                 # Configure the web app to use Docker Compose from the specified file
                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
