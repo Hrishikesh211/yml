@@ -22,7 +22,7 @@ variables:
   # Project root folder. Point to the folder containing manage.py file.
   projectRoot: $(System.DefaultWorkingDirectory)
 
-  # Python version: 3.7
+  # Python version: 3.11
   pythonVersion: '3.11'
 
 stages:
@@ -57,8 +57,8 @@ stages:
       displayName: 'Publish artifact'
       artifact: drop
 
-- stage: Deploy
-  displayName: 'Deploy Web App'
+- stage: DeployPythonApp
+  displayName: 'Deploy Python Web App'
   dependsOn: Build
   condition: succeeded()
   jobs:
@@ -94,3 +94,27 @@ stages:
         enableXmlTransform: false
         enableCustomDeployment: true
         verbose: true
+
+- stage: DeployDocker
+  displayName: 'Docker Deploy'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: DeploymentJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: drop
+      displayName: 'Download Artifacts'
+
+    - script: |
+        echo "Deploying docker-compose.yml to Azure Web App using Azure CLI"
+        az webapp config container set --name $(webAppName) \
+          --resource-group $(environmentName) \
+          --multicontainer-config-type compose \
+          --multicontainer-config-file $(Pipeline.Workspace)/drop/$(Build.BuildId)/docker-compose.yml
+
+        echo "Restarting Azure Web App to apply changes"
+        az webapp restart --name $(webAppName) --resource-group $(environmentName)
+      displayName: 'Deploy Docker Compose to Azure Web App'
