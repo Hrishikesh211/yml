@@ -101,6 +101,9 @@ stages:
       artifact: drop
       displayName: 'Download Artifacts'
 
+    - script: ls -la $(Pipeline.Workspace)/drop/
+      displayName: 'Verify Artifact Files'
+
     - task: AzureCLI@2
       inputs:
         azureSubscription: $(azureServiceConnectionId)
