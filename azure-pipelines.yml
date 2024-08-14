@@ -111,9 +111,13 @@ stages:
           az webapp config container set --name $(webAppName) \
             --resource-group $(RESOURCE_GROUP) \
             --multicontainer-config-type compose \
-            --multicontainer-config-file $(Pipeline.Workspace)/drop/$(Build.BuildId)/docker-compose.yml
+            --multicontainer-config-file $(Pipeline.Workspace)/drop/docker-compose.yml \
+            --docker-registry-server-url https://index.docker.io \
+            --docker-registry-server-user '' \
+            --docker-registry-server-password ''
 
           echo "Restarting Azure Web App to apply changes"
           az webapp restart --name $(webAppName) --resource-group $(RESOURCE_GROUP)
       displayName: 'Deploy Docker Compose to Azure Web App'
+
 
