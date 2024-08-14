@@ -85,6 +85,7 @@ stages:
         enableXmlTransform: false
         enableCustomDeployment: true
         verbose: true
+        deploymentTimeoutInMinutes: 15
 
 # Stage 3: Deploy
 - stage: DeployDocker
