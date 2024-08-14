@@ -5,15 +5,22 @@
 
 trigger:
 - main
-
 variables:
+  # Azure Resource Manager connection created during pipeline creation
   azureServiceConnectionId: '641a5b00-c982-46c8-ac54-d80edccda068'
+  # Web app name
   webAppName: 'devops-airflowpipeline-app'
+  # Agent VM image name
   vmImageName: 'ubuntu-latest'
+  # Environment name
   environmentName: 'devops-airflowpipeline-app'
+  # Project root folder. Point to the folder containing manage.py file.
   projectRoot: $(System.DefaultWorkingDirectory)
+  # Python version: 3.11
   pythonVersion: '3.11'
+
   RESOURCE_GROUP: 'rmb-pilot-deploy-appservice'
+
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
@@ -28,27 +35,25 @@ stages:
       inputs:
         versionSpec: '$(pythonVersion)'
       displayName: 'Use Python $(pythonVersion)'
-
     - script: |
         python -m venv antenv
         source antenv/bin/activate
       workingDirectory: $(projectRoot)
       displayName: "Install requirements"
-
     - task: ArchiveFiles@2
-      displayName: 'Archive docker-compose.yml'
+      displayName: 'Archive files'
       inputs:
         rootFolderOrFile: '$(projectRoot)'
+        includeRootFolder: false
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
         replaceExistingArchive: true
-
     - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
       displayName: 'Publish artifact'
       artifact: drop
 
-- stage: DeployApp
-  displayName: 'Deploy Multi-Container Web App'
+- stage: DeployPythonApp
+  displayName: 'Deploy Python Web App'
   dependsOn: Build
   condition: succeeded()
   jobs:
@@ -59,30 +64,32 @@ stages:
     - download: current
       artifact: drop
       displayName: 'Download Artifacts'
-
     - script: ls -la $(Pipeline.Workspace)/drop/
       displayName: 'List files in drop folder'
-
     - script: |
         echo "Cleaning up previous deployments"
         curl -X DELETE -u $(azureServiceConnectionId):$(servicePrincipalKey) https://$(webAppName).scm.azurewebsites.net/api/vfs/site/wwwroot/
       displayName: 'Clean up previous deployments'
-
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
     - task: AzureWebApp@1
-      displayName: 'Deploy Docker Compose to Azure Web App'
+      displayName: 'Deploy Azure Web App : $(webAppName)'
       inputs:
         azureSubscription: $(azureServiceConnectionId)
         appName: $(webAppName)
         package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
         deploymentMethod: 'zipDeploy'
         takeAppOfflineFlag: true
+        enableXmlTransform: false
         enableCustomDeployment: true
         verbose: true
 
 # Stage 3: Deploy
 - stage: DeployDocker
   displayName: 'Docker Deploy'
-  dependsOn: DeployApp
+  dependsOn: DeployPythonApp
   condition: succeeded()
   jobs:
   - job: DeploymentJob
