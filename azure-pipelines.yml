@@ -7,123 +7,107 @@ trigger:
 - main
 
 variables:
-  # Azure Resource Manager connection created during pipeline creation
   azureServiceConnectionId: '641a5b00-c982-46c8-ac54-d80edccda068'
-
-  # Web app name
   webAppName: 'devops-airflowpipeline-app'
-
-  # Agent VM image name
   vmImageName: 'ubuntu-latest'
-
-  # Environment name
   environmentName: 'devops-airflowpipeline-app'
-
-  # Project root folder. Point to the folder containing manage.py file.
   projectRoot: $(System.DefaultWorkingDirectory)
-
-  # Python version: 3.11
   pythonVersion: '3.11'
-
   RESOURCE_GROUP: 'rmb-pilot-deploy-appservice'
-
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
-# - stage: Build
-#   displayName: Build stage
-#   jobs:
-#   - job: BuildJob
-#     pool:
-#       vmImage: $(vmImageName)
-#     steps:
-#     - task: UsePythonVersion@0
-#       inputs:
-#         versionSpec: '$(pythonVersion)'
-#       displayName: 'Use Python $(pythonVersion)'
-
-#     - script: |
-#         python -m venv antenv
-#         source antenv/bin/activate
-#       workingDirectory: $(projectRoot)
-#       displayName: "Install requirements"
-
-#     - task: ArchiveFiles@2
-#       displayName: 'Archive files'
-#       inputs:
-#         rootFolderOrFile: '$(projectRoot)'
-#         includeRootFolder: false
-#         archiveType: zip
-#         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-#         replaceExistingArchive: true
-
-#     - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-#       displayName: 'Publish artifact'
-#       artifact: drop
-
-# - stage: DeployPythonApp
-#   displayName: 'Deploy Python Web App'
-#   dependsOn: Build
-#   condition: succeeded()
-#   jobs:
-#   - job: DeploymentJob
-#     pool:
-#       vmImage: $(vmImageName)
-#     steps:
-#     - download: current
-#       artifact: drop
-#       displayName: 'Download Artifacts'
-
-#     - script: ls -la $(Pipeline.Workspace)/drop/
-#       displayName: 'List files in drop folder'
-
-#     - script: |
-#         echo "Cleaning up previous deployments"
-#         curl -X DELETE -u $(azureServiceConnectionId):$(servicePrincipalKey) https://$(webAppName).scm.azurewebsites.net/api/vfs/site/wwwroot/
-#       displayName: 'Clean up previous deployments'
-
-#     - task: UsePythonVersion@0
-#       inputs:
-#         versionSpec: '$(pythonVersion)'
-#       displayName: 'Use Python $(pythonVersion)'
-
-#     - task: AzureWebApp@1
-#       displayName: 'Deploy Azure Web App : $(webAppName)'
-#       inputs:
-#         azureSubscription: $(azureServiceConnectionId)
-#         appName: $(webAppName)
-#         package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
-#         deploymentMethod: 'zipDeploy'
-#         takeAppOfflineFlag: true
-#         enableXmlTransform: false
-#         enableCustomDeployment: true
-#         verbose: true
-# Stage 3: Deploy
-- stage: Deploy
-  # dependsOn: Build
-  displayName: Deploy Stage 
+- stage: Build
+  displayName: Build stage
   jobs:
-    - job: Deploy
-      steps:
-        # Step 1: Deploy the web app using Docker Compose
+  - job: BuildJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
 
-          - task: AzureCLI@2
-            inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "Deploying to Azure Web App using Docker Compose..."
+    - script: |
+        python -m venv antenv
+        source antenv/bin/activate
+      workingDirectory: $(projectRoot)
+      displayName: "Install requirements"
 
-                # Ensure the web app exists and configure the settings
-                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+    - task: ArchiveFiles@2
+      displayName: 'Archive docker-compose.yml'
+      inputs:
+        rootFolderOrFile: '$(projectRoot)'
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+        replaceExistingArchive: true
+        include: $(COMPOSE_FILE_PATH)
 
-                # Configure the web app to use Docker Compose from the specified file
-                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+    - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      displayName: 'Publish artifact'
+      artifact: drop
 
-                # Restart the web app to apply the changes
-                az webapp restart --resource-group $(RESOURCE_GROUP) --name $(webAppName)
+- stage: DeployApp
+  displayName: 'Deploy Multi-Container Web App'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: DeploymentJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: drop
+      displayName: 'Download Artifacts'
 
-                echo "Docker Compose deployment completed."
-            displayName: 'Deploy Docker Compose to Azure Web App'
+    - script: ls -la $(Pipeline.Workspace)/drop/
+      displayName: 'List files in drop folder'
+
+    - script: |
+        echo "Cleaning up previous deployments"
+        curl -X DELETE -u $(azureServiceConnectionId):$(servicePrincipalKey) https://$(webAppName).scm.azurewebsites.net/api/vfs/site/wwwroot/
+      displayName: 'Clean up previous deployments'
+
+    - task: AzureWebApp@1
+      displayName: 'Deploy Docker Compose to Azure Web App'
+      inputs:
+        azureSubscription: $(azureServiceConnectionId)
+        appName: $(webAppName)
+        package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
+        deploymentMethod: 'zipDeploy'
+        runtimeStack: 'DOCKER|compose|'
+        containerCommand: 'docker-compose up -d'
+        takeAppOfflineFlag: true
+        enableCustomDeployment: true
+        verbose: true
+
+# Stage 3: Deploy
+# - stage: Deploy
+#   # dependsOn: Build
+#   displayName: Deploy Stage 
+#   jobs:
+#     - job: Deploy
+#       steps:
+#         # Step 1: Deploy the web app using Docker Compose
+
+#           - task: AzureCLI@2
+#             inputs:
+#               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+#               scriptType: 'bash'
+#               scriptLocation: 'inlineScript'
+#               inlineScript: |
+#                 echo "Deploying to Azure Web App using Docker Compose..."
+
+#                 # Ensure the web app exists and configure the settings
+#                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+
+#                 # Configure the web app to use Docker Compose from the specified file
+#                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+
+#                 # Restart the web app to apply the changes
+#                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(webAppName)
+
+#                 echo "Docker Compose deployment completed."
+#             displayName: 'Deploy Docker Compose to Azure Web App'
 
