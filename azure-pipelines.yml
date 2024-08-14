@@ -23,7 +23,7 @@ variables:
   projectRoot: $(System.DefaultWorkingDirectory)
 
   # Python version: 3.7
-  pythonVersion: '3.7'
+  pythonVersion: '3.11'
 
 stages:
 - stage: Build
@@ -42,7 +42,6 @@ stages:
         python -m venv antenv
         source antenv/bin/activate
         python -m pip install --upgrade pip
-        pip install setup
         pip install -r requirements.txt
       workingDirectory: $(projectRoot)
       displayName: "Install requirements"
@@ -56,8 +55,8 @@ stages:
         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
         replaceExistingArchive: true
 
-    - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-      displayName: 'Upload package'
+    - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      displayName: 'Publish artifact'
       artifact: drop
 
 - stage: Deploy
@@ -65,23 +64,35 @@ stages:
   dependsOn: Build
   condition: succeeded()
   jobs:
-  - deployment: DeploymentJob
+  - job: DeploymentJob
     pool:
       vmImage: $(vmImageName)
-    environment: $(environmentName)
-    strategy:
-      runOnce:
-        deploy:
-          steps:
+    steps:
+    - download: current
+      artifact: drop
+      displayName: 'Download Artifacts'
 
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '$(pythonVersion)'
-            displayName: 'Use Python version'
+    - script: ls -la $(Pipeline.Workspace)/drop/
+      displayName: 'List files in drop folder'
 
-          - task: AzureWebApp@1
-            displayName: 'Deploy Azure Web App : devops-airflowpipeline-app'
-            inputs:
-              azureSubscription: $(azureServiceConnectionId)
-              appName: $(webAppName)
-              package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
+    - script: |
+        echo "Cleaning up previous deployments"
+        curl -X DELETE -u $(azureServiceConnectionId):$(servicePrincipalKey) https://$(webAppName).scm.azurewebsites.net/api/vfs/site/wwwroot/
+      displayName: 'Clean up previous deployments'
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+
+    - task: AzureWebApp@1
+      displayName: 'Deploy Azure Web App : $(webAppName)'
+      inputs:
+        azureSubscription: $(azureServiceConnectionId)
+        appName: $(webAppName)
+        package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
+        deploymentMethod: 'zipDeploy'
+        takeAppOfflineFlag: true
+        enableXmlTransform: false
+        enableCustomDeployment: true
+        verbose: true
