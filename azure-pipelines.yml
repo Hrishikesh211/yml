@@ -42,7 +42,6 @@ stages:
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
         replaceExistingArchive: true
-        include: $(COMPOSE_FILE_PATH)
 
     - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
       displayName: 'Publish artifact'
@@ -76,38 +75,36 @@ stages:
         appName: $(webAppName)
         package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
         deploymentMethod: 'zipDeploy'
-        runtimeStack: 'DOCKER|compose|'
-        containerCommand: 'docker-compose up -d'
         takeAppOfflineFlag: true
         enableCustomDeployment: true
         verbose: true
 
 # Stage 3: Deploy
-# - stage: Deploy
-#   # dependsOn: Build
-#   displayName: Deploy Stage 
-#   jobs:
-#     - job: Deploy
-#       steps:
-#         # Step 1: Deploy the web app using Docker Compose
+- stage: Deploy
+  dependsOn: Build
+  displayName: Deploy Stage 
+  jobs:
+    - job: Deploy
+      steps:
+        # Step 1: Deploy the web app using Docker Compose
 
-#           - task: AzureCLI@2
-#             inputs:
-#               azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-#               scriptType: 'bash'
-#               scriptLocation: 'inlineScript'
-#               inlineScript: |
-#                 echo "Deploying to Azure Web App using Docker Compose..."
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Deploying to Azure Web App using Docker Compose..."
 
-#                 # Ensure the web app exists and configure the settings
-#                 az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+                # Ensure the web app exists and configure the settings
+                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
 
-#                 # Configure the web app to use Docker Compose from the specified file
-#                 az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
+                # Configure the web app to use Docker Compose from the specified file
+                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
 
-#                 # Restart the web app to apply the changes
-#                 az webapp restart --resource-group $(RESOURCE_GROUP) --name $(webAppName)
+                # Restart the web app to apply the changes
+                az webapp restart --resource-group $(RESOURCE_GROUP) --name $(webAppName)
 
-#                 echo "Docker Compose deployment completed."
-#             displayName: 'Deploy Docker Compose to Azure Web App'
+                echo "Docker Compose deployment completed."
+            displayName: 'Deploy Docker Compose to Azure Web App'
 
