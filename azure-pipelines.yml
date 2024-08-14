@@ -87,33 +87,33 @@ stages:
         verbose: true
         deploymentTimeoutInMinutes: 15
 
-# # Stage 3: Deploy
-# - stage: DeployDocker
-#   displayName: 'Docker Deploy'
-#   dependsOn: DeployPythonApp
-#   condition: succeeded()
-#   jobs:
-#   - job: DeploymentJob
-#     pool:
-#       vmImage: $(vmImageName)
-#     steps:
-#     - download: current
-#       artifact: drop
-#       displayName: 'Download Artifacts'
+# Stage 3: Deploy
+- stage: DeployDocker
+  displayName: 'Docker Deploy'
+  dependsOn: DeployPythonApp
+  condition: succeeded()
+  jobs:
+  - job: DeploymentJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: drop
+      displayName: 'Download Artifacts'
 
-#     - task: AzureCLI@2
-#       inputs:
-#         azureSubscription: $(azureServiceConnectionId)
-#         scriptType: 'bash'
-#         scriptLocation: 'inlineScript'
-#         inlineScript: |
-#           echo "Deploying docker-compose.yml to Azure Web App using Azure CLI"
-#           az webapp config container set --name $(webAppName) \
-#             --resource-group $(RESOURCE_GROUP) \
-#             --multicontainer-config-type compose \
-#             --multicontainer-config-file $(Pipeline.Workspace)/drop/$(Build.BuildId)/docker-compose.yml
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: $(azureServiceConnectionId)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Deploying docker-compose.yml to Azure Web App using Azure CLI"
+          az webapp config container set --name $(webAppName) \
+            --resource-group $(RESOURCE_GROUP) \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file $(Pipeline.Workspace)/drop/$(Build.BuildId)/docker-compose.yml
 
-#           echo "Restarting Azure Web App to apply changes"
-#           az webapp restart --name $(webAppName) --resource-group $(RESOURCE_GROUP)
-#       displayName: 'Deploy Docker Compose to Azure Web App'
+          echo "Restarting Azure Web App to apply changes"
+          az webapp restart --name $(webAppName) --resource-group $(RESOURCE_GROUP)
+      displayName: 'Deploy Docker Compose to Azure Web App'
 
