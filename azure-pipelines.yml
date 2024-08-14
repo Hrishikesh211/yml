@@ -97,13 +97,6 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
-    - download: current
-      artifact: drop
-      displayName: 'Download Artifacts'
-
-    - script: ls -la $(Pipeline.Workspace)/drop/
-      displayName: 'Verify Artifact Files'
-
     - task: AzureCLI@2
       inputs:
         azureSubscription: $(azureServiceConnectionId)
@@ -111,13 +104,16 @@ stages:
         scriptLocation: 'inlineScript'
         inlineScript: |
           echo "Deploying docker-compose.yml to Azure Web App using Azure CLI"
+          
+          az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(WEBAPP_NAME) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+
           az webapp config container set --name $(webAppName) \
             --resource-group $(RESOURCE_GROUP) \
             --multicontainer-config-type compose \
-            --multicontainer-config-file $(Pipeline.Workspace)/drop/docker-compose.yml \
-            --docker-registry-server-url https://index.docker.io \
-            --docker-registry-server-user '' \
-            --docker-registry-server-password ''
+            --multicontainer-config-file $(COMPOSE_FILE_PATH) \
+            --container-registry-url https://index.docker.io \
+            --container-registry-user '' \
+            --container-registry-password ''
 
           echo "Restarting Azure Web App to apply changes"
           az webapp restart --name $(webAppName) --resource-group $(RESOURCE_GROUP)
