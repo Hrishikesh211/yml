@@ -39,13 +39,21 @@ default_args = {
 # Define the DAG
 dag = DAG(
     "trigger_azure_functions",
-    default_args=default_args,
+    default_args = {
+    "owner": "airflow",
+    "depends_on_past": False,
+    "start_date": datetime(2023, 1, 1),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
+    },
     description="A DAG to trigger Azure Functions based on PostgreSQL data asynchronously",
     schedule_interval=timedelta(minutes=5),
+    max_active_runs=1,
+    max_active_tasks=5,
 )
 
-dag.max_active_runs=1,  # Ensure only one run is active at a time
-dag.max_active_tasks=5,  # Limit concurrent task instances
 
 def get_file_properties_from_db():
     """
