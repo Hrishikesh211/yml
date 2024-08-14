@@ -80,31 +80,33 @@ stages:
         verbose: true
 
 # Stage 3: Deploy
-- stage: Deploy
-  dependsOn: Build
-  displayName: Deploy Stage 
+- stage: DeployDocker
+  displayName: 'Docker Deploy'
+  dependsOn: DeployApp
+  condition: succeeded()
   jobs:
-    - job: Deploy
-      steps:
-        # Step 1: Deploy the web app using Docker Compose
+  - job: DeploymentJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - download: current
+      artifact: drop
+      displayName: 'Download Artifacts'
 
-          - task: AzureCLI@2
-            inputs:
-              azureSubscription: 'Development Subscription (d8501f72-cc6e-4c07-9f8c-b8523c3b63ec)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "Deploying to Azure Web App using Docker Compose..."
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: $(azureServiceConnectionId)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Deploying docker-compose.yml to Azure Web App using Azure CLI"
+          az webapp config container set --name $(webAppName) \
+            --resource-group $(environmentName) \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file $(Pipeline.Workspace)/drop/$(Build.BuildId)/docker-compose.yml
 
-                # Ensure the web app exists and configure the settings
-                az webapp config appsettings set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+          echo "Restarting Azure Web App to apply changes"
+          az webapp restart --name $(webAppName) --resource-group $(environmentName)
+      displayName: 'Deploy Docker Compose to Azure Web App'
 
-                # Configure the web app to use Docker Compose from the specified file
-                az webapp config container set --resource-group $(RESOURCE_GROUP) --name $(webAppName) --multicontainer-config-type compose --multicontainer-config-file $(COMPOSE_FILE_PATH)
-
-                # Restart the web app to apply the changes
-                az webapp restart --resource-group $(RESOURCE_GROUP) --name $(webAppName)
-
-                echo "Docker Compose deployment completed."
-            displayName: 'Deploy Docker Compose to Azure Web App'
 
