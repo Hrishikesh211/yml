@@ -30,36 +30,36 @@ variables:
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
 stages:
-- stage: Build
-  displayName: Build stage
-  jobs:
-  - job: BuildJob
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '$(pythonVersion)'
-      displayName: 'Use Python $(pythonVersion)'
+# - stage: Build
+#   displayName: Build stage
+#   jobs:
+#   - job: BuildJob
+#     pool:
+#       vmImage: $(vmImageName)
+#     steps:
+#     - task: UsePythonVersion@0
+#       inputs:
+#         versionSpec: '$(pythonVersion)'
+#       displayName: 'Use Python $(pythonVersion)'
 
-    - script: |
-        python -m venv antenv
-        source antenv/bin/activate
-      workingDirectory: $(projectRoot)
-      displayName: "Install requirements"
+#     - script: |
+#         python -m venv antenv
+#         source antenv/bin/activate
+#       workingDirectory: $(projectRoot)
+#       displayName: "Install requirements"
 
-    - task: ArchiveFiles@2
-      displayName: 'Archive files'
-      inputs:
-        rootFolderOrFile: '$(projectRoot)'
-        includeRootFolder: false
-        archiveType: zip
-        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-        replaceExistingArchive: true
+#     - task: ArchiveFiles@2
+#       displayName: 'Archive files'
+#       inputs:
+#         rootFolderOrFile: '$(projectRoot)'
+#         includeRootFolder: false
+#         archiveType: zip
+#         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+#         replaceExistingArchive: true
 
-    - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-      displayName: 'Publish artifact'
-      artifact: drop
+#     - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+#       displayName: 'Publish artifact'
+#       artifact: drop
 
 # - stage: DeployPythonApp
 #   displayName: 'Deploy Python Web App'
@@ -100,7 +100,8 @@ stages:
 #         verbose: true
 # Stage 3: Deploy
 - stage: Deploy
-  dependsOn: Build
+  # dependsOn: Build
+  displayName: Deploy Stage 
   jobs:
     - job: Deploy
       steps:
