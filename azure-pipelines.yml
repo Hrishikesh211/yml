@@ -9,17 +9,17 @@ variables:
   # Azure Resource Manager connection created during pipeline creation
   azureServiceConnectionId: '641a5b00-c982-46c8-ac54-d80edccda068'
   # Web app name
-  webAppName: 'devops-airflowpipeline-app'
+  webAppName: 'testp'
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
   # Environment name
-  environmentName: 'devops-airflowpipeline-app'
+  environmentName: 'testp'
   # Project root folder. Point to the folder containing manage.py file.
   projectRoot: $(System.DefaultWorkingDirectory)
   # Python version: 3.11
   pythonVersion: '3.11'
 
-  RESOURCE_GROUP: 'rmb-pilot-deploy-appservice'
+  RESOURCE_GROUP: 'test-1'
 
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
