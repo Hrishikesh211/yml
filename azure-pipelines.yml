@@ -9,17 +9,17 @@ variables:
   # Azure Resource Manager connection created during pipeline creation
   azureServiceConnectionId: '641a5b00-c982-46c8-ac54-d80edccda068'
   # Web app name
-  webAppName: 'testa'
+  webAppName: 'testair'
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
   # Environment name
-  environmentName: 'testa'
+  environmentName: 'testair'
   # Project root folder. Point to the folder containing manage.py file.
   projectRoot: $(System.DefaultWorkingDirectory)
   # Python version: 3.11
   pythonVersion: '3.11'
 
-  RESOURCE_GROUP: 'testa_group-9e04'
+  RESOURCE_GROUP: 'testair_group'
 
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
