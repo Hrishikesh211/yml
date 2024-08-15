@@ -19,7 +19,7 @@ variables:
   # Python version: 3.11
   pythonVersion: '3.11'
 
-  RESOURCE_GROUP: 'testa_group-94bd'
+  RESOURCE_GROUP: 'testa_group-9e04'
 
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
