@@ -9,17 +9,17 @@ variables:
   # Azure Resource Manager connection created during pipeline creation
   azureServiceConnectionId: '641a5b00-c982-46c8-ac54-d80edccda068'
   # Web app name
-  webAppName: 'testp'
+  webAppName: 'testml'
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
   # Environment name
-  environmentName: 'testp'
+  environmentName: 'testml'
   # Project root folder. Point to the folder containing manage.py file.
   projectRoot: $(System.DefaultWorkingDirectory)
   # Python version: 3.11
   pythonVersion: '3.11'
 
-  RESOURCE_GROUP: 'testp_group'
+  RESOURCE_GROUP: 'testml_group-aa94'
 
   COMPOSE_FILE_PATH: 'docker-compose.yml'
 
