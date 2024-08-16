@@ -18,8 +18,6 @@ services:
     volumes:
       - ${WEBAPP_STORAGE_HOME}/site/wwwroot/dags:/opt/airflow/dags
       - ${WEBAPP_STORAGE_HOME}/site/wwwroot/dags/requirements.txt:/requirements.txt
-    ports:
-      - "8080:8080"
     command: 
       - bash
       - -c
