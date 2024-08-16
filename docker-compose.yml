@@ -47,14 +47,6 @@ services:
       - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
     volumes:
       - ${WEBAPP_STORAGE_HOME}/site/wwwroot/dags:/opt/airflow/dags
-    command: 
-      - bash
-      - -c
-      - |
-        echo "Waiting for webserver to be ready..."
-        sleep 60
-        echo "Starting Airflow Scheduler..."
-        airflow scheduler
     restart: always
     depends_on:
       - airflow-webserver
